@@ -10,7 +10,6 @@
 // Usage: npm run parity   (outputs web.png, node.png, diff.png in out/parity/)
 
 import puppeteer from 'puppeteer-core';
-import { Resvg } from '@resvg/resvg-js';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,6 +17,7 @@ import { startServer } from './serve.mjs';
 import { CHROME_PATH, openWebApp } from './capture-web.mjs';
 import { loadStyle } from '../print/styles.mjs';
 import { renderMap } from '../print/render.mjs';
+import { renderPng } from '../print/png.mjs';
 
 // ------------------------------------------------------------------
 
@@ -159,8 +159,8 @@ function compareLayers(webLayers, nodeLayers) {
 
 // ------------------------------------------------------------------
 
-const svg = renderMap(await loadStyle('seav-original'));
-const nodePng = new Resvg(svg, { fitTo: { mode: 'width', value: WIDTH_PX } }).render().asPng();
+const { svg } = renderMap(await loadStyle('seav-original'));
+const nodePng = renderPng(svg, WIDTH_PX);
 
 await mkdir(OUT_DIR, { recursive: true });
 const server  = await startServer(PORT);

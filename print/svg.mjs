@@ -10,6 +10,11 @@ const XML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
 
 // ------------------------------------------------------------------
 
+// Escapes text for use in XML content or attribute values
+export const escapeXml = text => String(text).replace(/[&<>"]/g, char => XML_ESCAPES[char]);
+
+// ------------------------------------------------------------------
+
 // Returns a number as a short string rounded to at most numPlaces decimals
 export function formatNumber(value, numPlaces = 4) {
   return String(Number(value.toFixed(numPlaces)));
@@ -32,9 +37,6 @@ export function formatColor(rgb) {
 export function attrs(attributes) {
   return Object.entries(attributes)
     .filter(([, value]) => value !== undefined && value !== null)
-    .map(([name, value]) => {
-      const text = typeof value === 'number' ? formatNumber(value) : String(value);
-      return ` ${name}="${text.replace(/[&<>"]/g, char => XML_ESCAPES[char])}"`;
-    })
+    .map(([name, value]) => ` ${name}="${escapeXml(typeof value === 'number' ? formatNumber(value) : value)}"`)
     .join('');
 }

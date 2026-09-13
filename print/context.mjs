@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------
 
 // The context object passed to every layer: resolved style, view and page
-// geometry, length conversion from physical units to map units, and cached data.
+// geometry, length conversion, cached data, font usage, and render notes.
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -28,26 +28,32 @@ export function createContext(style) {
   const view = resolveView(style.view);
   const page = resolvePage(style.page, view);
   const mmPerUnit = page.mapWidthMm / view.width;
+  const tilt = deg2Rad(view.tiltDeg);
   const dataCache = new Map();
+  const usedFonts = new Map();
 
-  // Converts a length token or a plain number (map units) to map units
-  const len = value => {
-    if (typeof value === 'number') return value;
+  // Converts a length token or a plain number (map units) to millimeters
+  const mm = value => {
+    if (typeof value === 'number') return value * mmPerUnit;
     const match = LENGTH_PATTERN.exec(value);
     if (!match) throw new Error(`Invalid length: ${value}`);
     const amount = Number(match[1]);
     switch (match[2]) {
-      case 'u' : return amount;
-      case 'mm': return amount / mmPerUnit;
-      case 'pt': return amount * MM_PER_PT / mmPerUnit;
+      case 'u' : return amount * mmPerUnit;
+      case 'mm': return amount;
+      case 'pt': return amount * MM_PER_PT;
     }
   };
+
+  // Converts a length token or a plain number (map units) to map units
+  const len = value => mm(value) / mmPerUnit;
 
   return {
     style,
     view,
     page,
     mmPerUnit,
+    mm,
     len,
 
     // Converts a list of length tokens (e.g. a dash array) to an attribute value
@@ -61,6 +67,16 @@ export function createContext(style) {
       `rotate(${formatNumber(view.tiltDeg, 8)})`,
     ].join(' '),
 
+    // Converts an untilted map Point to page millimeters as [x, y]
+    // (same mapping as mapTransform, for page-space layers such as labels)
+    toPage: point => {
+      const tilted = point.copy().rotate(tilt);
+      return [
+        page.mapOffsetMm.x + mmPerUnit * (tilted.x - view.minX),
+        page.mapOffsetMm.y + mmPerUnit * (tilted.y - view.minY),
+      ];
+    },
+
     // Loads and caches a JSON data file (path relative to the repo root)
     data: filename => {
       if (!dataCache.has(filename)) {
@@ -68,6 +84,13 @@ export function createContext(style) {
       }
       return dataCache.get(filename);
     },
+
+    // Records a bundled font as used, so the SVG embeds it
+    useFont: (family, weight) => usedFonts.set(`${family}|${weight}`, [family, weight]),
+    getUsedFonts: () => [...usedFonts.values()],
+
+    // Human-readable remarks from layers (e.g. hidden labels), printed by the CLI
+    notes: [],
   };
 }
 

@@ -4,6 +4,7 @@
 
 import './setup.mjs';
 import { createContext } from './context.mjs';
+import { getFontFaceCss } from './fonts.mjs';
 import { attrs, formatNumber } from './svg.mjs';
 import LAYERS from './layers/index.mjs';
 
@@ -13,9 +14,10 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 
 // ------------------------------------------------------------------
 
-// Renders a resolved style (see styles.mjs) to a complete SVG document string.
-// The SVG viewBox is in page millimeters; consecutive map-space layers share
-// one group that scales, positions, and tilts untilted map coordinates.
+// Renders a resolved style (see styles.mjs) to { svg, notes }: a complete SVG
+// document string and remarks from layers. The SVG viewBox is in page
+// millimeters; consecutive map-space layers share one group that scales,
+// positions, and tilts untilted map coordinates.
 export function renderMap(style) {
 
   const ctx = createContext(style);
@@ -33,9 +35,13 @@ export function renderMap(style) {
     });
   if (isInMapGroup) parts.push('</g>');
 
+  // Embed the fonts layers used, so browsers render the same text as resvg
+  const usedFonts = ctx.getUsedFonts();
+  if (usedFonts.length) parts.unshift(`<defs><style>\n${getFontFaceCss(usedFonts)}\n</style></defs>`);
+
   const width  = formatNumber(ctx.page.widthMm , 3);
   const height = formatNumber(ctx.page.heightMm, 3);
-  return (
+  const svg = (
     `<svg${attrs({
       xmlns  : SVG_NS,
       width  : `${width}mm`,
@@ -45,4 +51,5 @@ export function renderMap(style) {
     parts.join('\n') +
     '\n</svg>\n'
   );
+  return { svg, notes: ctx.notes };
 }

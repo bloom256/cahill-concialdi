@@ -9,9 +9,9 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Resvg } from '@resvg/resvg-js';
 import { loadStyle } from './styles.mjs';
 import { renderMap } from './render.mjs';
+import { renderPng } from './png.mjs';
 
 // ------------------------------------------------------------------
 
@@ -30,16 +30,15 @@ if (command !== 'render' || variantNames.length === 0) {
 for (const name of variantNames) {
 
   const startMs = performance.now();
-  const svg = renderMap(await loadStyle(name));
+  const { svg, notes } = renderMap(await loadStyle(name));
 
   const outDir = join(ROOT, 'out', 'latest', name);
   await mkdir(outDir, { recursive: true });
   await writeFile(join(outDir, 'map.svg'), svg);
-
-  const png = new Resvg(svg, { fitTo: { mode: 'width', value: OVERVIEW_WIDTH_PX } }).render().asPng();
-  await writeFile(join(outDir, 'overview.png'), png);
+  await writeFile(join(outDir, 'overview.png'), renderPng(svg, OVERVIEW_WIDTH_PX));
 
   const sizeMb  = (Buffer.byteLength(svg) / 1e6).toFixed(1);
   const seconds = ((performance.now() - startMs) / 1000).toFixed(1);
   console.log(`${name}: map.svg (${sizeMb} MB) + overview.png (${OVERVIEW_WIDTH_PX} px) in ${seconds} s -> ${outDir}`);
+  notes.forEach(note => console.log(`  ${note}`));
 }
