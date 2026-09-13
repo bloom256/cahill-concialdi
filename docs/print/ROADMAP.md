@@ -46,7 +46,8 @@ Done when: all layers render at print scale with no stray cross-map lines, gaps,
 - [ ] `print/styles/base.mjs` tokens in mm/pt; deep-merge variant overrides
 - [ ] `seav-print` baseline, then the `seav-*` improvement variants one at a time (`STYLES.md`)
 - [ ] 4-6 contrasting variants to stress-test the favorite
-- [ ] `npm run round`: tier 1-2 outputs per variant into `out/rounds/<round>/` + manifest in `docs/print/rounds/`
+- [ ] Variant composition: `extends` presets, seeded randomness, `archived` flag
+- [ ] `npm run round`: all non-archived variants by default; tier 1-2 outputs per variant into `out/rounds/<round>/` + manifest in `docs/print/rounds/`
 - [ ] `npm run gallery`: local server + gallery page (grid, synced pan/zoom, swipe, blink, pixel diff, crop rows, rating and notes saved to the manifest)
 - [ ] Font embedding (OFL fonts in `print/fonts/`)
 

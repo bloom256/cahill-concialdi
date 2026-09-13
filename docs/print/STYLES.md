@@ -4,6 +4,38 @@ The final look is not chosen yet, so the pipeline is built to produce **many
 variants cheaply** and compare them fairly. A variant is a small override file;
 everything else is shared.
 
+## Variants live side by side, not in branches (decided 2026-09-13)
+
+- Each variant is one file in `print/styles/`. Any commit can render **all**
+  of them: `npm run round` with no arguments renders every variant not marked archived.
+- Git branches are only for renderer or data *code* experiments, merged back when
+  done. A look never gets its own branch.
+- Adding a look means adding a file, so the collection keeps growing: a geographic
+  map (`geo-hypsometric`) and a random-colors map (`political-random-s42`)
+  sit next to `seav-print` in the same build.
+- Name variants by family prefix: `seav-*` (position colors), `political-*`
+  (MAPCOLOR or random fills), `geo-*` (physical: relief, hypsometric, bathymetry),
+  `mood-*` (midnight, parchment, blueprint, ...). Names in the tables below are provisional.
+- A variant extends shared presets, then overrides them:
+
+```js
+// print/styles/political-random-s42.mjs
+export default {
+  extends: ['seav-base'],
+  land: { mode: 'random', seed: 42, neighborsDistinct: true },
+};
+```
+
+- Randomness is always seeded, so a take re-renders identically. A different seed
+  is a different variant.
+- A change to shared code affects every variant at once. That is intended: bug fixes
+  and better data improve all looks. Each variant spells out its defining choices in
+  its own file, not through base defaults, so edits to the base can't quietly change
+  its identity. Past takes stay reproducible from the commit in their round manifest.
+- To retire a variant, set `archived: true`: default renders skip it, but it can still
+  be rendered. Delete the file only when it is clearly dead; old manifests still
+  point to a commit that has it.
+
 ## Reference look: seav original (owner's favorite)
 
 The owner liked the upstream vector map (`drawVectorMap()` in `index.html`) at first

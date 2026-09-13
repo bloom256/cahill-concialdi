@@ -56,6 +56,8 @@ Read `docs/print/README.md` before starting print-related work.
   when the reason is not obvious from the subject.
 - ASCII only in commit messages.
 - Work on feature branches (currently `admin_map`); `main` mirrors upstream.
+- Never create branches for style variants. Variants are files in `print/styles/`
+  and all of them render from the same commit. Branches are only for code experiments.
 
 ## Running the current app
 
