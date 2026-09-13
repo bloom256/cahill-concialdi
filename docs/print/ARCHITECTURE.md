@@ -39,16 +39,23 @@ data/build/              processed geometry (see DATA.md storage policy)
 docs/print/rounds/       round manifests with ratings and notes (committed)
 print/
   cli.mjs                render | round | gallery | pdf | png | preflight
-  render.mjs             renderMap({ style, page }) -> SVG string
-  context.mjs            units, projection helpers, defs registry, data loader
-  geometry.mjs           cut / densify / project / path-string helpers
-  layers/                one module per layer (see LAYERS.md)
-  styles/                base.mjs + one module per variant
+  render.mjs             renderMap(style) -> SVG string
+  setup.mjs              Complex.js global for the projection code
+  context.mjs            page geometry, length tokens, map transform, data loader
+  styles.mjs             loadStyle(name): `extends` presets + deep merge
+  svg.mjs                attribute, number and color formatting
+  geometry.mjs           cut / densify helpers for 10m data (Phase 2)
+  layers/                one module per layer + index.mjs stack (see LAYERS.md)
+  styles/                one module per variant (+ shared presets)
   labels/overrides.json  hand-tuned label placement
   fonts/                 OFL font files
   raster/                offline raster renderer (Phase 6)
   gallery/               gallery page + tiny local server (reads/writes round manifests)
-out/rounds/              render outputs per round and variant (gitignored)
+scripts/serve.mjs        static server with correct MIME types
+scripts/capture-web.mjs  headless Chrome capture of the web app
+scripts/check-parity.mjs seav-original vs. web app
+out/latest/              working renders from npm run render (gitignored)
+out/rounds/              snapshots per round and variant (gitignored)
 web/                     optional static page
 ```
 
@@ -71,16 +78,19 @@ web/                     optional static page
 
 ```js
 {
-  style,                 // resolved tokens: deep merge of base.mjs + variant
-  page,                  // { widthMm, heightMm, mapWidthMm, mapOffsetMm: { x, y } }
-  mm(value),             // millimeters -> SVG units of the map group
-  pt(value),             // points -> SVG units of the map group
-  project(latLon, idx),  // untilted map coordinates (from concialdi.mjs)
-  toPage(point),         // map coordinates -> page mm (applies scale, tilt, offset)
-  data(name),            // loads data/build/<name>.json (cached)
-  defs,                  // defs.add(id, svg) for gradients, patterns, clipPaths
+  style,             // resolved style: `extends` presets deep-merged, variant values win
+  page,              // { widthMm, heightMm, mapWidthMm, mapHeightMm, mapOffsetMm: { x, y } }
+  mmPerUnit,         // page millimeters per map unit
+  len(token),        // '0.15u' | '0.3mm' | '6pt' | number -> map units
+  lenList(tokens),   // e.g. dash arrays -> attribute string in map units
+  mapTransform,      // SVG transform: map units -> page mm (offset, scale, origin, tilt)
+  data(filename),    // cached JSON loader, path relative to the repo root
+  // planned: toPage(point) for page-space labels; defs registry (gradients, patterns, clipPaths)
 }
 ```
+
+Implemented in `print/context.mjs`. Layers import projection and geometry helpers
+directly from `concialdi.mjs` and `map-geometry.mjs`.
 
 ## Layer contract
 

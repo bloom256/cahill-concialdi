@@ -9,9 +9,10 @@ and feels "that's it". Record every round in the iteration log at the bottom.
 
 ## Phase 0 -- Tooling foundation
 
-- [ ] `package.json` (`"type": "module"`), `complex.js` from npm instead of unpkg for Node
-- [ ] Dev dependencies: `mapshaper`, `@resvg/resvg-js`, `puppeteer-core` (uses local Chrome), `sharp`, `opentype.js`
-- [ ] npm scripts skeleton: `serve`, `data`, `render`, `round`, `gallery`, `pdf`, `png`, `preflight`
+- [x] `package.json` (`"type": "module"`), `complex.js` from npm instead of unpkg for Node
+- [x] `npm run serve`: Node static server with correct MIME types (Python's server breaks `.mjs` on Windows)
+- [ ] Dependencies, each added when first used: done `@resvg/resvg-js`, `puppeteer-core` (uses local Chrome); later `mapshaper`, `sharp`, `opentype.js`
+- [ ] npm scripts: done `serve`, `render`, `parity`, `capture-web`; later `data`, `round`, `gallery`, `pdf`, `png`, `preflight`
 - [x] `.gitignore`: `out/`, `data/raw/`; track `package-lock.json`
 - [x] Storage policy: renders never in git, no LFS for now (`DATA.md`)
 
@@ -19,13 +20,13 @@ Done when: `npm install && npm run serve` works and the old app still renders.
 
 ## Phase 1 -- Headless SVG renderer (parity)
 
-- [ ] `print/render.mjs`: DOM-free `renderMap({ style, page }) -> string`
-- [ ] Port background outline, graticule, special circles, countries, boundaries from `map-vector.mjs` into `print/layers/`
-- [ ] Physical page wrapper: `<svg width="1500mm" height="900mm">` with the map group scaled/translated/tilted
-- [ ] `seav-original` style that reproduces the owner's favorite web look exactly (see `STYLES.md`)
-- [ ] Parity check: `seav-original` render vs. screenshot of `index.html` (visual diff)
+- [x] `print/render.mjs`: DOM-free `renderMap(style) -> string`
+- [x] Vector geometry extracted into the shared `map-geometry.mjs`; `print/layers/` for paper, ocean, graticule, circles, land, admin0
+- [x] Physical page wrapper: SVG sized in mm, with the map group scaled, positioned and tilted
+- [x] `seav-original` style that reproduces the owner's favorite web look exactly (see `STYLES.md`)
+- [x] `npm run parity`: all 608 paths identical to the web app (path data, computed style, transform), pixel mismatch 0.17% (edge smoothing only)
 
-Done when: `npm run render -- --style seav-original` writes `out/seav-original/map.svg` that matches the web app.
+Done when: `npm run render -- seav-original` writes `out/latest/seav-original/map.svg` that matches the web app. **Done 2026-09-13.**
 
 ## Phase 2 -- Print-grade data (Natural Earth 10m)
 

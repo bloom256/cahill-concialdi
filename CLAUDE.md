@@ -78,6 +78,23 @@ depends on that global.
 Local tooling available: Node 24, npm, Python 3.14, Chrome, Edge, git-lfs.
 Not installed: Inkscape, ImageMagick, Ghostscript.
 
+## Print renderer
+
+```
+npm install                          # once
+npm run render -- seav-original      # -> out/latest/seav-original/map.svg + overview.png
+npm run parity                       # seav-original vs. the web app; must pass after geometry changes
+```
+
+- `print/render.mjs` builds the SVG as a string (no DOM). `print/cli.mjs` also writes a
+  4000 px PNG with resvg. `out/latest/` holds working copies; comparison rounds are
+  separate snapshots.
+- Variants: `print/styles/<name>.mjs`, loaded by `print/styles.mjs` (`extends` + deep
+  merge). Lengths are tokens: `'0.15u'` (map units), `'0.3mm'`, `'6pt'`.
+- Layers: `print/layers/*.mjs`; stack order lives in `print/layers/index.mjs`.
+- `seav-original` must keep reproducing the web app exactly; never restyle it.
+- Parity and capture scripts need Chrome at the default path (or set `CHROME_PATH`).
+
 ## Code map
 
 | File | Role | DOM? |

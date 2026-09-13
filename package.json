@@ -4,6 +4,16 @@
   "type": "module",
   "description": "Cahill-Concialdi projection web app and print wall map renderer",
   "scripts": {
-    "serve": "node scripts/serve.mjs"
+    "serve": "node scripts/serve.mjs",
+    "capture-web": "node scripts/capture-web.mjs",
+    "render": "node print/cli.mjs render",
+    "parity": "node scripts/check-parity.mjs"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "2.6.2",
+    "complex.js": "2.0.11"
+  },
+  "devDependencies": {
+    "puppeteer-core": "25.10.0"
   }
 }
