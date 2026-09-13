@@ -11,6 +11,8 @@ export default {
   name       : 'seav-original',
   description: 'Upstream web app vector map, unchanged',
 
+  view: { tiltDeg: -5.4, frame: 'original' },
+
   page: { mapWidthMm: 1500, color: '#000' },
 
   ocean: { show: true, fill: '#123' },
