@@ -144,6 +144,8 @@ verifies their SHA-256 (see `scripts/data/fetch-imagery.mjs`):
   27-30 MB each (about 340 MB in total), from the NASA Science asset server
   (`.../bmng/bmng-topography-bathymetry/<month>/`). These are the same files as the
   Visible Earth image records (e.g. 73580 January, 73726 June, 73909 December).
+- `npm run month-sheet` renders all 12 months side by side in the `geo-blue-marble`
+  look (`out/sheets/blue-marble-months.png`), to choose a season.
 - The repo's `nasa-blue-marble-ng.jpg` (3600x1800) is a winter month, closest to December.
   It remains the web app's source.
 - **Resolution check** (150 cm print, upright view, 60 px per degree source):
