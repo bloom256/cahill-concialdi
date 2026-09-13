@@ -116,6 +116,24 @@ forever, can only be removed by rewriting history, and hit GitHub limits
 - Renders never depend on system fonts; only fonts from `print/fonts/` are used.
 - Bumping a data pin or a dependency goes in its own commit, so the takes before and after it are clearly separated.
 
+## Country stats snapshot
+
+`data/build/country-stats.json` (committed) holds, per country id in `ne-country-areas.json`:
+display name, population, GDP and GDP per capita (current US$), each with year and source.
+Regenerate with `node scripts/data/fetch-country-stats.mjs`; commit the refresh on its own.
+
+- **Values:** World Bank WDI API (`SP.POP.TOTL`, `NY.GDP.MKTP.CD`, `NY.GDP.PCAP.CD`),
+  most recent non-empty value per country (mostly 2025).
+- **Taiwan:** not in the World Bank data; IMF DataMapper (`LP`, `NGDPD`, `NGDPDPC`)
+  for the same year. Recent IMF values may be estimates.
+- **No data:** Antarctica, Western Sahara, Northern Cyprus, Somaliland, Siachen Glacier, Vatican
+  City and many small territories; North Korea and the British Virgin Islands have population only.
+  These get a name-only label.
+- **Names:** English CLDR region names (`Intl.DisplayNames`) with map-friendly overrides
+  (DR Congo, Congo, Myanmar, Palestine, Hong Kong, Macao) and names for Natural Earth's
+  non-ISO ids. Non-ASCII characters are stored as `\u` escapes, so the file stays ASCII
+  while labels keep their diacritics.
+
 ## Licenses and credits (for the cartouche)
 
 - **Projection:** Cahill-Concialdi Bat, Luca Concialdi (2015), a rearrangement of
