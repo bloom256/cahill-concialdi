@@ -94,6 +94,15 @@ npm run parity                       # seav-original vs. the web app; must pass 
 - Layers: `print/layers/*.mjs`; stack order lives in `print/layers/index.mjs`.
 - `seav-original` must keep reproducing the web app exactly; never restyle it.
 - Parity and capture scripts need Chrome at the default path (or set `CHROME_PATH`).
+- Each render also writes `crops/*.png`: A4-sized windows at 100% print scale (150 dpi)
+  over fixed places (`print/crops.mjs`). Judge text and line sizes on the crops, not the
+  overview.
+- Text uses only bundled OFL fonts from `print/fonts/` (`print/fonts.mjs`): measured with
+  opentype.js, embedded into the SVG, passed to resvg. Never rely on system fonts.
+- Data snapshots from APIs live in `data/build/` and are committed (e.g.
+  `country-stats.json` from `scripts/data/fetch-country-stats.mjs`).
+- `renderMap(style)` returns `{ svg, notes, toPage }`; layers push human-readable remarks
+  to `ctx.notes` (e.g. hidden labels), which the CLI prints.
 
 ## Code map
 

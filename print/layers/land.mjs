@@ -8,7 +8,7 @@ import { attrs, formatColor } from '../svg.mjs';
 // ------------------------------------------------------------------
 
 // Fill color modes: functions from a country's MultiPolygon to [red, green, blue]
-const COLOR_MODES = {
+export const COLOR_MODES = {
   position: getPositionColor,
 };
 

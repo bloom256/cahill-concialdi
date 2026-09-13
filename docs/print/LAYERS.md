@@ -32,6 +32,20 @@ can be placed across the gaps between map lobes.
 
 ## Labels
 
+**Implemented: `countryStats`** (`print/layers/country-stats.mjs`, page space). Each
+country gets its name plus population, GDP and GDP per capita, placed entirely inside
+one of its polygons:
+- Candidate centers are the pole of inaccessibility plus an interior grid, tried at
+  several angles. A binary search finds the largest text block that fits without
+  crossing any edge.
+- Horizontal, centered placements win near-ties (`rotationPenalty`). Multi-line blocks
+  stay horizontal (`rotateFullBlock: false`); name-only labels may follow a country's
+  long axis (Norway, Chile, the United Kingdom).
+- If the full block does not fit at `minNameSize`, the label falls back to the name only
+  (down to `minNameOnlySize`), else it is hidden. The render prints the counts and the
+  hidden names.
+- Text is dark or light depending on the fill's luminance.
+
 **Classes and priority** (higher first in collision resolution):
 
 1. Oceans and major seas -- large, italic or small caps, letterspaced, optionally curved

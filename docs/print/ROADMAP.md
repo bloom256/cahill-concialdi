@@ -110,3 +110,5 @@ Done when: preflight passes and a physical proof has been approved.
 | Round | Date | Compared | Owner's reaction | Next changes |
 |---|---|---|---|---|
 | 0 | 2026-09-13 | seav original web app (vector) | Loved it at first sight: countries in different colors, only borders visible. Not enough, not perfect yet | Faithful print port (`seav-print`), then focused improvement variants |
+| 1 | 2026-09-13 | `seav-original` vs. `seav-upright` | Upright with the pole centered "looks beautiful"; every later variant must use the centered-pole view | Add country stats labels |
+| 2 | 2026-09-13 | `seav-upright-stats` | "So beautiful!" | Keep refining label fit; consider labels for microstates (outside with leaders) |

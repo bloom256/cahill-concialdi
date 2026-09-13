@@ -5,12 +5,13 @@
 // Order follows docs/print/LAYERS.md. Each layer module exports
 // { id, space: 'map' | 'page', enabled(style), render(ctx) -> SVG string }.
 
-import paper     from './paper.mjs';
-import ocean     from './ocean.mjs';
-import graticule from './graticule.mjs';
-import circles   from './circles.mjs';
-import land      from './land.mjs';
-import admin0    from './admin0.mjs';
+import paper        from './paper.mjs';
+import ocean        from './ocean.mjs';
+import graticule    from './graticule.mjs';
+import circles      from './circles.mjs';
+import land         from './land.mjs';
+import admin0       from './admin0.mjs';
+import countryStats from './country-stats.mjs';
 
 export default [
   paper,
@@ -19,4 +20,5 @@ export default [
   circles,
   land,
   admin0,
+  countryStats,
 ];

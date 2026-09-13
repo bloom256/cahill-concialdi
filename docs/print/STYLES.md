@@ -73,6 +73,7 @@ only linework, and the quiet graticule.
 |---|---|---|
 | `seav-original` | None: 50m data, same unit widths | Exact parity with the web app |
 | `seav-upright` | No -5.4 deg tilt; North Pole on the vertical center line (`view.frame: 'pole-centered'`) | Owner's request: a symmetric, upright butterfly |
+| `seav-upright-stats` | Adds each country's name, population, GDP and GDP per capita inside the country (Barlow Condensed) | Owner's request: the numbers behind each country |
 | `seav-print` | Same colors and look; 10m geometry; line widths converted to printable mm | **The baseline for every comparison** |
 | `seav-centroid` | Area-weighted centroid or NE label point instead of the vertex mean; option to freeze the original 50m colors in a lookup table | The vertex mean is pulled toward detailed coastlines (Norway, Canada, Chile, archipelagos) and colors would drift with 10m data |
 | `seav-oklch` | Map lat/lon through OKLab/OKLCH instead of clamped RGB | Even lightness, smoother transitions, no clipped over-bright patches (the 1.25 boost pins many channels at 255) |
