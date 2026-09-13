@@ -129,7 +129,7 @@ Build these after the `seav-*` family. They deliberately cover very different mo
 | `papercraft` | Unique to this projection | Octahedron faces subtly shaded like folded paper, fold lines, soft shadows at tears | subtle | Needs careful restraint |
 | `bathymetric` | Ocean-focused | Depth bands in 6-8 blues, land one warm tone, minimal borders | no | Bathymetry must be cut at all tears |
 | `hypsometric-relief` | Physical atlas | NE cross-blended hypso + thin borders + light labels | yes (60 px/deg) | Big downloads; raster renderer |
-| `blue-marble` | Photographic Earth | NASA Blue Marble NG + faint white borders/labels | yes | Imagery looks soft near face vertices |
+| `geo-blue-marble` (built) | Photographic Earth | NASA Blue Marble NG imagery, faint white graticule; no fills, borders or labels | yes (100 dpi from the 3600x1800 repo image for now) | Soft at print size until the 21600x10800 source is used |
 | `night-lights` | Dramatic | NASA Black Marble, faint coast, gold city labels | yes | Large black areas; banding |
 | `day-night-moment` | Personal, unique | Blue/Black Marble blended at a chosen date/time (existing day/night logic) | yes | Needs a meaningful moment |
 | `riso-duotone` | Graphic print | Two inks (e.g. `#ff48b0` + `#0078bf`), overprint look, halftone patterns | no | Fluorescent colors are outside CMYK gamut |

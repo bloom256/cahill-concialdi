@@ -9,7 +9,7 @@ Every layer is optional and toggled by the style (`<layer>.show`).
 | 1 | `paper` | page | -- | Page background color, optional grain texture |
 | 2 | `ocean` | map | outline | Bat-shaped map background (from `drawBackground()`) |
 | 3 | `bathymetry` | map | bathymetry | Depth bands; must be cut at all southern tears |
-| 4 | `raster-base` | map | raster | Imagery/relief clipped to the outline (Phase 6) |
+| 4 | `imagery` | page | raster | Implemented: equirectangular image reprojected with the shared cell inverse, bilinear sampling, embedded as JPEG clipped to the outline (`imagery: { source, dpi }`) |
 | 5 | `graticule` | map | generated | 10 or 15 deg; option to draw only over ocean |
 | 6 | `circles` | map | generated | Equator, tropics, polar circles |
 | 7 | `fold-lines` | map | generated | Octahedron face edges as subtle "fold" marks |
