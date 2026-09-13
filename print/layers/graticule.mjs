@@ -15,8 +15,9 @@ export default {
       `<g${attrs({
         id            : 'graticule',
         fill          : 'none',
-        stroke        : graticule.stroke,
-        'stroke-width': ctx.len(graticule.width),
+        stroke          : graticule.stroke,
+        'stroke-width'  : ctx.len(graticule.width),
+        'stroke-opacity': graticule.opacity,
       })}>` +
       `<path${attrs({ d: pointListsToPathData(generateGraticule(graticule.intervalDeg), false) })}/>` +
       '</g>'

@@ -15,8 +15,9 @@ export default {
       `<g${attrs({
         id            : 'circles',
         fill          : 'none',
-        stroke        : circles.stroke,
-        'stroke-width': ctx.len(circles.width),
+        stroke          : circles.stroke,
+        'stroke-width'  : ctx.len(circles.width),
+        'stroke-opacity': circles.opacity,
       })}>` +
       `<path${attrs({
         class: 'equator',
