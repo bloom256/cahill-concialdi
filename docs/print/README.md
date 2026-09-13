@@ -22,6 +22,7 @@ reproducibly from this repository in the Cahill-Concialdi projection.
 | Pace | No deadline. Iterate as long as needed until the owner looks at it and feels "that's it". Quality over speed | 2026-09-13 |
 | Content | Admin-1 subdivisions, labels, rivers and lakes, frame and cartouche. Must stay extensible: more layers may be added later | 2026-09-13 |
 | Docs | `CLAUDE.md` at repo root, plan in `docs/print/` | 2026-09-13 |
+| Orientation | Every variant after `seav-original` uses the upright, North-Pole-centered view of `seav-upright` (no -5.4 deg tilt); new variants extend `seav-upright` or a descendant of it | 2026-09-13 |
 | Variants | All variants live side by side as style files in the same commit, never in branches. Every build can render all of them, and the collection grows over time (e.g. a geographic map and a random-colors map next to `seav-print`) (`STYLES.md`) | 2026-09-13 |
 | Variant comparison | Tiered outputs (SVG, 4000 px overview, fixed 100%-scale crops) reviewed in a local gallery with synced zoom, swipe, blink and pixel diff. PDFs, deep zoom and home-printed crops for finalists only (`STYLES.md`) | 2026-09-13 |
 | Storage | Git holds what reproduces a render (code, styles, fonts, data pins, lockfile) plus round manifests with ratings and notes. Renders stay in `out/`; final print files go to a GitHub Release (`DATA.md`) | 2026-09-13 |
