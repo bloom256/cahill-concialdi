@@ -11,9 +11,9 @@ and feels "that's it". Record every round in the iteration log at the bottom.
 
 - [ ] `package.json` (`"type": "module"`), `complex.js` from npm instead of unpkg for Node
 - [ ] Dev dependencies: `mapshaper`, `@resvg/resvg-js`, `puppeteer-core` (uses local Chrome), `sharp`, `opentype.js`
-- [ ] npm scripts skeleton: `serve`, `data`, `render`, `variants`, `pdf`, `png`, `preflight`
-- [ ] `.gitignore`: `out/`, `data/raw/`
-- [ ] Decide Git LFS policy for large build artifacts (`DATA.md`)
+- [ ] npm scripts skeleton: `serve`, `data`, `render`, `round`, `gallery`, `pdf`, `png`, `preflight`
+- [ ] `.gitignore`: `out/`, `data/raw/`; track `package-lock.json`
+- [x] Storage policy: renders never in git, no LFS for now (`DATA.md`)
 
 Done when: `npm install && npm run serve` works and the old app still renders.
 
@@ -29,7 +29,8 @@ Done when: `npm run render -- --style seav-original` writes `out/seav-original/m
 
 ## Phase 2 -- Print-grade data (Natural Earth 10m)
 
-- [ ] `scripts/data/fetch.mjs`: download and unzip sources into `data/raw/`
+- [ ] `scripts/data/sources.json`: Natural Earth version, URLs, SHA-256 pins
+- [ ] `scripts/data/fetch.mjs`: download, verify checksums, unzip into `data/raw/`
 - [ ] Geometry cutter: split at true tears, insert seam-crossing vertices, densify (`ARCHITECTURE.md`)
 - [ ] Re-apply the 150W Antarctica split and 168.5W Umnak split on 10m data
 - [ ] Build: admin-0 polygons (+ `MAPCOLOR7/9/13`, label points), boundary lines incl. disputed, coastline
@@ -45,11 +46,11 @@ Done when: all layers render at print scale with no stray cross-map lines, gaps,
 - [ ] `print/styles/base.mjs` tokens in mm/pt; deep-merge variant overrides
 - [ ] `seav-print` baseline, then the `seav-*` improvement variants one at a time (`STYLES.md`)
 - [ ] 4-6 contrasting variants to stress-test the favorite
-- [ ] `npm run variants`: SVG + 2000 px preview + fixed 100%-scale crops per variant
-- [ ] `print/gallery.html`: grid, full-size pan/zoom, A/B slider, crop rows
+- [ ] `npm run round`: tier 1-2 outputs per variant into `out/rounds/<round>/` + manifest in `docs/print/rounds/`
+- [ ] `npm run gallery`: local server + gallery page (grid, synced pan/zoom, swipe, blink, pixel diff, crop rows, rating and notes saved to the manifest)
 - [ ] Font embedding (OFL fonts in `print/fonts/`)
 
-Done when: the owner can open one page and compare all variants overview-and-detail.
+Done when: the owner can open one page, compare all variants of a round in overview and detail, and record ratings and notes.
 
 ## Phase 4 -- Labels and cartography
 
@@ -99,7 +100,7 @@ Done when: preflight passes and a physical proof has been approved.
 ## Phase 9 -- Final print and archive
 
 - [ ] Freeze the chosen style; tag the commit (e.g. `print-v1`)
-- [ ] Archive PDF + SVG + render settings + data versions
+- [ ] Attach PDF, SVG and flattened TIFF to a GitHub Release on the tag
 - [ ] Order the print; note shop, paper and settings in `PRINT-SPECS.md`
 
 ## Iteration log

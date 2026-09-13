@@ -19,23 +19,26 @@ Status: **proposed**. Nothing below exists yet except the original web app modul
    = styles/<variant>.mjs + layers/*.mjs + concialdi.mjs
             |
             v
- out/<variant>/map.svg --+--> export-pdf  (headless Chrome)  -> map.pdf
-                         +--> export-png  (resvg-js)         -> preview.png, crops/*.png
-                         +--> outline text (opentype.js)     -> map-outlined.svg
+ out/rounds/<round>/<variant>/map.svg
+            +--> export-png  (resvg-js)          -> overview.png, crops/*.png
+            +--> export-pdf  (headless Chrome)   -> map.pdf           (finalists)
+            +--> deep-zoom tiles (sharp)         -> tiles/            (finalists)
+            +--> outline text (opentype.js)      -> map-outlined.svg  (final)
             |
             v
- print/gallery.html (compare variants)        web/ (optional static page)
+ gallery (npm run gallery) <-> docs/print/rounds/<round>.json   web/ (optional static page)
 ```
 
 ## Directory layout
 
 ```
 package.json             "type": "module"
-scripts/data/            fetch.mjs, build-<layer>.mjs, cut.mjs
+scripts/data/            sources.json (pins), fetch.mjs, build-<layer>.mjs, cut.mjs
 data/raw/                downloads (gitignored)
 data/build/              processed geometry (see DATA.md storage policy)
+docs/print/rounds/       round manifests with ratings and notes (committed)
 print/
-  cli.mjs                render | variants | pdf | png | preflight
+  cli.mjs                render | round | gallery | pdf | png | preflight
   render.mjs             renderMap({ style, page }) -> SVG string
   context.mjs            units, projection helpers, defs registry, data loader
   geometry.mjs           cut / densify / project / path-string helpers
@@ -44,8 +47,8 @@ print/
   labels/overrides.json  hand-tuned label placement
   fonts/                 OFL font files
   raster/                offline raster renderer (Phase 6)
-  gallery.html
-out/                     render outputs (gitignored)
+  gallery/               gallery page + tiny local server (reads/writes round manifests)
+out/rounds/              render outputs per round and variant (gitignored)
 web/                     optional static page
 ```
 

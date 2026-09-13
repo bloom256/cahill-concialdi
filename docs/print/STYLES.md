@@ -110,20 +110,72 @@ Ideas that make the map unique to the owner:
 - A small marker at the home office coordinates
 - Tissot indicatrices or a fold-net diagram explaining why this projection was chosen
 
-## Comparison workflow
+## Comparison workflow (decided 2026-09-13)
 
-1. `npm run variants` renders every variant to `out/variants/<name>/`:
-   `map.svg`, `preview.png` (2000 px wide), and `crops/*.png` at 100% print scale.
-2. Fixed crop windows (each about A4 at print scale, 297 x 210 mm):
-   Europe, East Asia, Caribbean, Indonesia and Philippines, Bering Strait tear,
-   southern Africa and Madagascar, Antarctica edge.
-3. `print/gallery.html`: grid of previews -> click for full pan/zoom -> A/B slider
-   between two variants -> row of crops for side-by-side detail.
-4. Shortlist 2-3. Print their A4 crops at 100% on a home printer, tape them to the
-   office wall, and look from 1 m and 3 m, in daylight and lamp light.
-5. Iterate tokens on the finalists; create derived variants (e.g. `midnight-gold-b`)
-   instead of editing the originals, so comparisons stay reproducible.
-6. Order a shop proof strip of the winner before the full print.
+We don't make a PDF for every take or full-resolution PNGs: they're slow, huge, and
+can't be compared side by side. Instead, outputs are tiered by purpose:
+
+| Tier | Output | Used for | Produced |
+|---|---|---|---|
+| 1 | `map.svg` | Source for every other output | Every render |
+| 2 | `overview.png`, 4000 px wide | Composition and color balance; the view from 2-3 m | Every variant |
+| 2 | `crops/<window>.png` at 100% print scale, 150 dpi | Line weights, text sizes, clutter; the view from 1 m | Every variant |
+| 3 | Gallery (`npm run gallery`) | Comparing tiers 1-2 | Always |
+| 4 | Deep-zoom tiles (200 dpi), `map.pdf`, A4 crops printed at home | Checking finalists | Shortlist only |
+
+**Crop windows** stay fixed so every variant is judged on the same places. Each is
+about A4 at print scale (297 x 210 mm): Europe, East Asia, Caribbean, Indonesia and
+Philippines, Bering Strait tear, southern Africa and Madagascar, Antarctica edge.
+
+**Round layout.** Renders go under `out/` (not in git). The manifest is in git:
+
+```
+out/rounds/2026-09-20-r1/            <- renders, gitignored
+  seav-print/   map.svg  overview.png  crops/*.png
+  seav-oklch/   ...
+docs/print/rounds/2026-09-20-r1.json <- manifest, committed
+```
+
+```json
+{
+  "round": "2026-09-20-r1",
+  "baseline": "seav-print",
+  "variants": [
+    {
+      "name": "seav-oklch",
+      "commit": "abc1234",
+      "changes": { "land.mode": "position-oklch" },
+      "rating": 4,
+      "notes": "Smoother gradient, but Africa feels dull"
+    }
+  ],
+  "decision": "Keep OKLCH; try higher chroma next round"
+}
+```
+
+**Gallery features:**
+- Grid of overviews showing name, one-line change vs. baseline, and rating
+- 2-4 variants side by side with synchronized pan/zoom
+- Swipe slider and blink toggle (flips A/B in place; the best way to spot subtle color or width changes)
+- Pixel-diff highlight between two variants
+- Crop rows: the same window across all variants
+- Rating and notes per variant, saved straight into the round manifest by the local gallery server
+
+**Round loop:**
+1. Change one thing per variant. Derive a new variant (`seav-oklch-b`) rather than editing
+   one that has already been compared.
+2. `npm run round -- seav-print seav-oklch ...` renders tiers 1-2 into a new round
+   and writes its manifest.
+3. Review in the gallery, then rate and note each variant.
+4. Commit the manifest (`Record round 2026-09-20-r1 review`). Add a line to the
+   iteration log in `ROADMAP.md`. Optionally keep one curated ~1200 px JPG
+   per milestone in `docs/print/rounds/<round>/`.
+5. For the shortlist, produce tier 4: PDF, deep zoom, and A4 crops printed at 100%,
+   taped to the wall, and viewed from 1 m and 3 m in daylight and lamp light.
+6. For the final candidate, order a shop proof strip before the full print.
+
+**Screen caveat:** monitors show dark and saturated colors brighter than paper does.
+Judge composition and detail on screen; decide final colors from physical proofs.
 
 ## Evaluation checklist
 

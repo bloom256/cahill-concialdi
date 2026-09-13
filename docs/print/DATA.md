@@ -79,13 +79,42 @@ the Ashmore and Cartier Islands polygons (see commit `b9de364`).
 | Admin-1 lines | the largest layer; simplify hardest, filter by country if needed |
 | Web page build | < 5 MB gzipped (50m base, fewer admin-1 lines, no fonts inline) |
 
-## Storage policy
+## Storage policy (decided 2026-09-13)
 
-- `data/raw/`: gitignored. Recreate with `npm run data`.
-- `data/build/`: commit files under ~10 MB; larger files go to Git LFS (installed
-  locally) or stay regenerable only.
-- High-res rasters (hundreds of MB): never committed; fetched by script, optionally LFS.
-- `out/`: gitignored. The chosen final PDF/SVG is archived outside git (or in a release).
+Git stores everything needed to **reproduce** a render, plus the **decisions**.
+It never stores the renders themselves: a take is fully defined by its commit and
+variant name.
+
+**In git:**
+
+| What | Where |
+|---|---|
+| Render code, style variants, label overrides | `print/` |
+| Data build scripts | `scripts/data/` |
+| Data pins: Natural Earth version, source URLs, SHA-256 of each download | `scripts/data/sources.json` |
+| Fonts (OFL) | `print/fonts/` |
+| `package-lock.json` (pins renderer dependency versions) | repo root |
+| Round manifests: variants, commits, changes, ratings, notes, decision | `docs/print/rounds/<round>.json` |
+| Optional milestone thumbnails (~1200 px JPG, curated, never every take) | `docs/print/rounds/<round>/` |
+| Build outputs under ~10 MB | `data/build/` |
+
+**Not in git:**
+
+| What | Where | How to recover |
+|---|---|---|
+| Raw downloads, high-res rasters | `data/raw/` | `npm run data` (verified against checksums) |
+| Build outputs over ~10 MB | `data/build/` | `npm run data` |
+| All renders: SVG, PNG, crops, tiles, PDFs | `out/` | Re-render from commit + variant; optionally back up `out/` to a synced folder (OneDrive/Google Drive) |
+| Final print files | GitHub Release on tag `print-vN` (assets up to 2 GB each, outside git history) | Download from the release |
+
+**Why:** one round of renders is 200-400 MB. Binaries in history grow the repo
+forever, can only be removed by rewriting history, and hit GitHub limits
+(a warning at 50 MB per file, a block at 100 MB, and a small free LFS quota). No Git LFS for now.
+
+**Reproducibility rules:**
+- A checksum mismatch on a download fails the build; data never changes silently.
+- Renders never depend on system fonts; only fonts from `print/fonts/` are used.
+- Bumping a data pin or a dependency goes in its own commit, so the takes before and after it are clearly separated.
 
 ## Licenses and credits (for the cartouche)
 
