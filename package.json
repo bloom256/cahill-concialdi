@@ -13,7 +13,8 @@
     "@resvg/resvg-js": "2.6.2",
     "complex.js": "2.0.11",
     "opentype.js": "2.0.0",
-    "polylabel": "2.1.0"
+    "polylabel": "2.1.0",
+    "sharp": "0.35.4"
   },
   "devDependencies": {
     "puppeteer-core": "25.10.0"
