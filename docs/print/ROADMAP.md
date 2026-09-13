@@ -12,7 +12,7 @@ and feels "that's it". Record every round in the iteration log at the bottom.
 - [ ] `package.json` (`"type": "module"`), `complex.js` from npm instead of unpkg for Node
 - [ ] Dev dependencies: `mapshaper`, `@resvg/resvg-js`, `puppeteer-core` (uses local Chrome), `sharp`, `opentype.js`
 - [ ] npm scripts skeleton: `serve`, `data`, `render`, `round`, `gallery`, `pdf`, `png`, `preflight`
-- [ ] `.gitignore`: `out/`, `data/raw/`; track `package-lock.json`
+- [x] `.gitignore`: `out/`, `data/raw/`; track `package-lock.json`
 - [x] Storage policy: renders never in git, no LFS for now (`DATA.md`)
 
 Done when: `npm install && npm run serve` works and the old app still renders.
