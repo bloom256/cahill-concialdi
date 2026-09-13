@@ -140,16 +140,19 @@ Regenerate with `node scripts/data/fetch-country-stats.mjs`; commit the refresh 
 (topography and bathymetry, 21600x10800, 60 px per degree) into `data/raw/bmng/` and
 verifies their SHA-256 (see `scripts/data/fetch-imagery.mjs`):
 
-| Month | Record | File | Size |
-|---|---|---|---|
-| December 2004 | 73909 | `world.topo.bathy.200412.3x21600x10800.jpg` | 29.9 MB |
-| June 2004 | 73726 | `world.topo.bathy.200406.3x21600x10800.jpg` | 27.9 MB |
-
+- **All 12 months of 2004** are pinned: `world.topo.bathy.2004MM.3x21600x10800.jpg`,
+  27-30 MB each (about 340 MB in total), from the NASA Science asset server
+  (`.../bmng/bmng-topography-bathymetry/<month>/`). These are the same files as the
+  Visible Earth image records (e.g. 73580 January, 73726 June, 73909 December).
 - The repo's `nasa-blue-marble-ng.jpg` (3600x1800) is a winter month, closest to December.
   It remains the web app's source.
-- 60 px per degree is about 300 dpi at the equator on a 150 cm print. Even larger
-  500 m tiles exist (8 tiles of 21600x21600 per month, `...3x21600x21600.A1.jpg` to
-  `D2`, about 45-55 MB each) if close-up detail ever needs more.
+- **Resolution check** (150 cm print, upright view, 60 px per degree source):
+  median about 370 dpi, 340-390 dpi over Europe and the USA. It drops to about
+  110-130 dpi only at the four equator face corners (open ocean) and in parts of
+  Antarctica, where the projection stretches most. 500 m tiles also exist for every
+  month (8 tiles of 21600x21600, `...3x21600x21600.A1.jpg` to `D2`, about 53-58 MB
+  each), but they would only improve those few spots, or much larger prints and a
+  deep-zoom web page.
 - **License:** NASA states its images "generally are not subject to copyright in the
   United States" and asks that NASA be acknowledged, without implying endorsement.
   The Blue Marble page asks users to credit **"NASA Earth Observatory"**.
