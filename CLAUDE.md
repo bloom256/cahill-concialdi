@@ -61,11 +61,14 @@ Read `docs/print/README.md` before starting print-related work.
 
 ## Running the current app
 
-No build step and no `package.json` yet. Modules use `fetch`, so serve over HTTP:
+No build step. Modules use `fetch`, so the app must be served over HTTP:
 
 ```
-python -m http.server 8000      # then open http://localhost:8000/
+npm run serve      # then open http://127.0.0.1:8000/
 ```
+
+Do not use `python -m http.server` on Windows: it serves `.mjs` as `text/plain`,
+which browsers refuse to run as module scripts (the page stays black).
 
 The bottom `<script type="module">` in `index.html` chooses what to draw:
 `drawVectorMap()` or `drawRasterMap(RASTER_STYLE, graticuleInterval)`.

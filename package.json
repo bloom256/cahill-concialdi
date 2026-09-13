@@ -1,0 +1,9 @@
+{
+  "name": "cahill-concialdi",
+  "private": true,
+  "type": "module",
+  "description": "Cahill-Concialdi projection web app and print wall map renderer",
+  "scripts": {
+    "serve": "node scripts/serve.mjs"
+  }
+}
