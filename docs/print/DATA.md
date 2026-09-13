@@ -1,0 +1,98 @@
+# Data
+
+## Current data (web app)
+
+| File | Content | Print suitability |
+|---|---|---|
+| `ne-country-areas.json` | `[isoA2, MultiPolygon]` x 241, 0.01 deg, ~100k vertices, NE 50m-level detail | Coarse at 150 cm (Iceland has 452 vertices) |
+| `ne-boundaries.json` | `[isUndisputed, LineString]` x 363, ~20k vertices | Coarse |
+| `ne-i.jpg`, `ne-hypso.jpg`, `nasa-*.jpg` | 3600x1800 equirectangular, 10 px/deg | Unusable for print (~48 dpi) |
+
+Keep these for the web app. Print builds go to `data/build/`.
+
+## Target sources
+
+Natural Earth 10m unless noted. Download pages:
+<https://www.naturalearthdata.com/downloads/10m-cultural-vectors/>,
+<https://www.naturalearthdata.com/downloads/10m-physical-vectors/>,
+<https://www.naturalearthdata.com/downloads/10m-raster-data/>.
+Direct zips are usually at `https://naciscdn.org/naturalearth/10m/{cultural,physical,raster}/<name>.zip`;
+GeoJSON mirrors are in `github.com/nvkelso/natural-earth-vector` (`geojson/`).
+**Verify exact names and URLs when implementing `fetch.mjs`.**
+
+| Layer | Dataset | Useful fields |
+|---|---|---|
+| Countries (fill) | `ne_10m_admin_0_countries` | `ISO_A2`, `ADM0_A3`, `NAME`, `NAME_LONG`, `MAPCOLOR7/8/9/13`, `LABELRANK`, `LABEL_X`, `LABEL_Y`, `MIN_LABEL`, `MAX_LABEL` |
+| Country borders | `ne_10m_admin_0_boundary_lines_land`, `ne_10m_admin_0_boundary_lines_disputed_areas` | `FEATURECLA`, `SCALERANK` |
+| Coastline | `ne_10m_coastline` | `SCALERANK` |
+| Admin-1 | `ne_10m_admin_1_states_provinces` (polygons), `ne_10m_admin_1_states_provinces_lines` | `adm0_a3`, `name`, `labelrank`, `scalerank`, `latitude/longitude` label point |
+| Lakes | `ne_10m_lakes` (+ `ne_10m_lakes_europe`, `ne_10m_lakes_north_america`) | `scalerank`, `name` |
+| Rivers | `ne_10m_rivers_lake_centerlines_scale_rank` (+ Europe / North America supplements) | `scalerank`, `name`, `strokeweig` |
+| Cities | `ne_10m_populated_places` (or `_simple`) | `SCALERANK`, `FEATURECLA` (capitals), `POP_MAX`, `NAME` |
+| Ocean/sea names | `ne_10m_geography_marine_polys` | `scalerank`, `name`, `featurecla` |
+| Regions/mountains | `ne_10m_geography_regions_polys`, `_points`, `_elevation_points` | `scalerank`, `name` |
+| Bathymetry (optional) | `ne_10m_bathymetry_all` (depth bands 0..10000 m) | `depth` |
+| Ice (optional) | `ne_10m_glaciated_areas`, `ne_10m_antarctic_ice_shelves_polys` | |
+| Reefs, minor islands (optional) | `ne_10m_reefs`, `ne_10m_minor_islands` | |
+| Time zones (optional) | `ne_10m_time_zones` (the `tz` branch used a timezone-boundary-builder export) | `zone`, `utc_format` |
+| Raster: hypsometric | NE "Cross Blended Hypso with Shaded Relief, Water, Drainages and Ocean Bottom" (21600x10800) | |
+| Raster: NE I / NE II | NE1 / NE2 high-res with shaded relief and water (21600x10800) | |
+| Raster: shaded relief | NE shaded relief / gray earth (21600x10800) | |
+| Raster: Blue Marble NG | NASA Visible Earth, topography + bathymetry, 21600x10800 or 500 m tiles (86400x43200) | |
+| Raster: Black Marble | NASA Earth at Night (2016), 3 km global or 500 m tiles | |
+
+Why 10m: at 150 cm wide the map is roughly 1:20M, so NE 10m (nominally 1:10M) has
+about twice the detail needed -- enough headroom to simplify cleanly. 50m is visibly
+angular at arm's length.
+
+Why 60 px/deg rasters: the equator scale is ~5.3 mm/deg, so 200 dpi needs ~42 px/deg
+and 300 dpi needs ~63 px/deg (see `PRINT-SPECS.md`). Antarctica and face vertices are
+enlarged, so they will look softer than the rest regardless.
+
+## Preprocessing (per layer)
+
+Tool: `mapshaper` (npm, runs in Node) for filtering, topology-aware simplification,
+cleaning and rounding; custom Node code for tear cutting and densifying.
+
+1. **Filter fields** to what the renderer needs (ids, names, ranks, colors).
+2. **Filter features** by rank where appropriate (e.g. rivers `scalerank <= 8`,
+   cities by `SCALERANK` and capitals).
+3. **Simplify** with topology preserved (shared borders stay shared, no slivers):
+   Visvalingam weighted, `keep-shapes` so small islands survive. Target vertex spacing
+   ~0.2-0.3 mm at print scale (~4-6 km).
+4. **Clean and round:** `-clean`, then 0.01 deg precision (~1.1 km, ~0.05 mm at print);
+   use 0.001 deg for tiny islands/lakes if rounding collapses them.
+5. **Cut at tears and densify** (`ARCHITECTURE.md`, geometry pipeline). Re-apply the
+   manual splits of the current data: Antarctica at 150W, Umnak Island at 168.5W.
+6. **Write** compact JSON (same minimal style as the current files) to `data/build/`,
+   and log feature/vertex counts and byte size per layer.
+
+Special cases to carry over from the current data: ISO code fixes for features with
+`-99` codes (e.g. France, Norway, Kosovo, Northern Cyprus, Somaliland) and removal of
+the Ashmore and Cartier Islands polygons (see commit `b9de364`).
+
+## Size budget
+
+| Target | Budget |
+|---|---|
+| Master SVG (all layers, fonts embedded) | < 30 MB, < ~1.5M path vertices |
+| Admin-1 lines | the largest layer; simplify hardest, filter by country if needed |
+| Web page build | < 5 MB gzipped (50m base, fewer admin-1 lines, no fonts inline) |
+
+## Storage policy
+
+- `data/raw/`: gitignored. Recreate with `npm run data`.
+- `data/build/`: commit files under ~10 MB; larger files go to Git LFS (installed
+  locally) or stay regenerable only.
+- High-res rasters (hundreds of MB): never committed; fetched by script, optionally LFS.
+- `out/`: gitignored. The chosen final PDF/SVG is archived outside git (or in a release).
+
+## Licenses and credits (for the cartouche)
+
+- **Projection:** Cahill-Concialdi Bat, Luca Concialdi (2015), a rearrangement of
+  B.J.S. Cahill's conformal butterfly (1909); conformal octant math after L.P. Lee (1976).
+- **Code:** Eugene Alvin Villar (MIT, see `LICENSE.md`); octant projection ported from
+  Justin Kunimune's Map-Projections (see that repository's license).
+- **Data:** Natural Earth (public domain; credit appreciated). NASA Visible Earth /
+  Earth Observatory imagery (public domain; credit NASA).
+- **Fonts:** list each font and its SIL Open Font License.

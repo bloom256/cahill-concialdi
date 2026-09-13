@@ -1,0 +1,109 @@
+# Roadmap
+
+Phases are ordered by dependency. Phases 3 (styles) and 4-5 (cartography) can
+iterate in parallel once the renderer and data exist. Check items off as they land.
+
+**There is no deadline.** Phases 3-5 plus the proofing steps of phase 7 form a
+refinement loop that repeats as often as needed, until the owner looks at a proof
+and feels "that's it". Record every round in the iteration log at the bottom.
+
+## Phase 0 -- Tooling foundation
+
+- [ ] `package.json` (`"type": "module"`), `complex.js` from npm instead of unpkg for Node
+- [ ] Dev dependencies: `mapshaper`, `@resvg/resvg-js`, `puppeteer-core` (uses local Chrome), `sharp`, `opentype.js`
+- [ ] npm scripts skeleton: `serve`, `data`, `render`, `variants`, `pdf`, `png`, `preflight`
+- [ ] `.gitignore`: `out/`, `data/raw/`
+- [ ] Decide Git LFS policy for large build artifacts (`DATA.md`)
+
+Done when: `npm install && npm run serve` works and the old app still renders.
+
+## Phase 1 -- Headless SVG renderer (parity)
+
+- [ ] `print/render.mjs`: DOM-free `renderMap({ style, page }) -> string`
+- [ ] Port background outline, graticule, special circles, countries, boundaries from `map-vector.mjs` into `print/layers/`
+- [ ] Physical page wrapper: `<svg width="1500mm" height="900mm">` with the map group scaled/translated/tilted
+- [ ] `seav-original` style that reproduces the owner's favorite web look exactly (see `STYLES.md`)
+- [ ] Parity check: `seav-original` render vs. screenshot of `index.html` (visual diff)
+
+Done when: `npm run render -- --style seav-original` writes `out/seav-original/map.svg` that matches the web app.
+
+## Phase 2 -- Print-grade data (Natural Earth 10m)
+
+- [ ] `scripts/data/fetch.mjs`: download and unzip sources into `data/raw/`
+- [ ] Geometry cutter: split at true tears, insert seam-crossing vertices, densify (`ARCHITECTURE.md`)
+- [ ] Re-apply the 150W Antarctica split and 168.5W Umnak split on 10m data
+- [ ] Build: admin-0 polygons (+ `MAPCOLOR7/9/13`, label points), boundary lines incl. disputed, coastline
+- [ ] Build: admin-1 polygons + lines (with rank fields for filtering)
+- [ ] Build: lakes, rivers (scale rank), populated places, marine label polygons
+- [ ] Optional builds: bathymetry bands, glaciers/ice shelves, reefs, minor islands, time zones
+- [ ] Simplify/round per layer to the print scale; report file sizes and vertex counts
+
+Done when: all layers render at print scale with no stray cross-map lines, gaps, or missing islands.
+
+## Phase 3 -- Style system and variant gallery
+
+- [ ] `print/styles/base.mjs` tokens in mm/pt; deep-merge variant overrides
+- [ ] `seav-print` baseline, then the `seav-*` improvement variants one at a time (`STYLES.md`)
+- [ ] 4-6 contrasting variants to stress-test the favorite
+- [ ] `npm run variants`: SVG + 2000 px preview + fixed 100%-scale crops per variant
+- [ ] `print/gallery.html`: grid, full-size pan/zoom, A/B slider, crop rows
+- [ ] Font embedding (OFL fonts in `print/fonts/`)
+
+Done when: the owner can open one page and compare all variants overview-and-detail.
+
+## Phase 4 -- Labels and cartography
+
+- [ ] Label classes: oceans/seas, countries, admin-1 (filtered), cities, rivers, optional physical regions
+- [ ] Placement: NE label points or pole of inaccessibility in projected space, size by rank/area
+- [ ] Greedy collision pass by priority; halos
+- [ ] `print/labels/overrides.json` for manual nudges/hides/curves
+- [ ] Rivers tapered by scale rank; lakes knocked out of land
+
+Done when: 100%-scale crops of dense regions (Europe, Caribbean, SE Asia) read cleanly.
+
+## Phase 5 -- Frame and cartouche
+
+- [ ] Layout grid for the empty areas around the bat shape
+- [ ] Title/subtitle, legend, projection note with octahedron fold diagram, credits, edition/date
+- [ ] Neatline/border styles per variant
+- [ ] Optional insets (orthographic/polar views only -- no Mercator/Robinson/Equal Earth)
+
+Done when: the whole page composes as one designed object, not a map with text pasted on.
+
+## Phase 6 -- Raster layers (only if a chosen style needs them)
+
+- [ ] Offline Node raster renderer (port `MapCell` inverse math, strips, bilinear sampling)
+- [ ] 60 px/deg sources (NE hypsometric/shaded relief, NASA Blue/Black Marble)
+- [ ] Clip to map outline or land; blend modes baked in the raster (not live SVG filters)
+- [ ] Output at 200-300 dpi and embed into the SVG/PDF
+
+Done when: raster crops at 100% look sharp with no seams at area edges or the antimeridian.
+
+## Phase 7 -- Export, preflight, proofing
+
+- [ ] `npm run pdf`: headless Chrome PDF at exact page size, backgrounds on, fonts embedded
+- [ ] Shop-safe SVG variant with text converted to outlines
+- [ ] Flattened TIFF/PNG fallback at 200-300 dpi
+- [ ] `npm run preflight`: min stroke width, min font size, node count, file size, fonts, bounds
+- [ ] Home proof: A4 crops at 100% scale taped to the wall, viewed from 1-3 m
+- [ ] Shop proof strip of the finalist (e.g. 30 x 90 cm slice)
+
+Done when: preflight passes and a physical proof has been approved.
+
+## Phase 8 -- Static HTML page (optional)
+
+- [ ] `web/` page: zoomable SVG, style switcher, credits
+- [ ] Lighter data build for the browser if the print SVG is too heavy
+- [ ] Publish via GitHub Pages on the fork
+
+## Phase 9 -- Final print and archive
+
+- [ ] Freeze the chosen style; tag the commit (e.g. `print-v1`)
+- [ ] Archive PDF + SVG + render settings + data versions
+- [ ] Order the print; note shop, paper and settings in `PRINT-SPECS.md`
+
+## Iteration log
+
+| Round | Date | Compared | Owner's reaction | Next changes |
+|---|---|---|---|---|
+| 0 | 2026-09-13 | seav original web app (vector) | Loved it at first sight: countries in different colors, only borders visible. Not enough, not perfect yet | Faithful print port (`seav-print`), then focused improvement variants |
