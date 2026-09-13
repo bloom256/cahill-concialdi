@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { loadStyle } from './styles.mjs';
 import { renderMap } from './render.mjs';
 import { renderPng } from './png.mjs';
+import { renderCrops } from './crops.mjs';
 
 // ------------------------------------------------------------------
 
@@ -30,15 +31,20 @@ if (command !== 'render' || variantNames.length === 0) {
 for (const name of variantNames) {
 
   const startMs = performance.now();
-  const { svg, notes } = renderMap(await loadStyle(name));
+  const { svg, notes, toPage } = renderMap(await loadStyle(name));
 
   const outDir = join(ROOT, 'out', 'latest', name);
-  await mkdir(outDir, { recursive: true });
+  await mkdir(join(outDir, 'crops'), { recursive: true });
   await writeFile(join(outDir, 'map.svg'), svg);
   await writeFile(join(outDir, 'overview.png'), renderPng(svg, OVERVIEW_WIDTH_PX));
+  const crops = renderCrops(svg, toPage);
+  for (const crop of crops) await writeFile(join(outDir, 'crops', `${crop.name}.png`), crop.png);
 
   const sizeMb  = (Buffer.byteLength(svg) / 1e6).toFixed(1);
   const seconds = ((performance.now() - startMs) / 1000).toFixed(1);
-  console.log(`${name}: map.svg (${sizeMb} MB) + overview.png (${OVERVIEW_WIDTH_PX} px) in ${seconds} s -> ${outDir}`);
+  console.log(
+    `${name}: map.svg (${sizeMb} MB), overview.png (${OVERVIEW_WIDTH_PX} px), ` +
+    `${crops.length} crops in ${seconds} s -> ${outDir}`
+  );
   notes.forEach(note => console.log(`  ${note}`));
 }

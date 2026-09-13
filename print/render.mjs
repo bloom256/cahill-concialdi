@@ -14,10 +14,11 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 
 // ------------------------------------------------------------------
 
-// Renders a resolved style (see styles.mjs) to { svg, notes }: a complete SVG
-// document string and remarks from layers. The SVG viewBox is in page
-// millimeters; consecutive map-space layers share one group that scales,
-// positions, and tilts untilted map coordinates.
+// Renders a resolved style (see styles.mjs) to { svg, notes, toPage }: a
+// complete SVG document string, remarks from layers, and the map Point to
+// page mm mapping. The SVG viewBox is in page millimeters; consecutive
+// map-space layers share one group that scales, positions, and tilts
+// untilted map coordinates.
 export function renderMap(style) {
 
   const ctx = createContext(style);
@@ -51,5 +52,5 @@ export function renderMap(style) {
     parts.join('\n') +
     '\n</svg>\n'
   );
-  return { svg, notes: ctx.notes };
+  return { svg, notes: ctx.notes, toPage: ctx.toPage };
 }
