@@ -85,13 +85,16 @@ Not installed: Inkscape, ImageMagick, Ghostscript.
 | `cahill-conformal.mjs` | `projectInOctant()` -- Lee conformal octant math (needs global `Complex`) | no |
 | `concialdi.mjs` | 12 `MAP_AREAS`, map constants, `project(latLon, areaIdx?)` | no |
 | `solar-position.mjs` | `getSunLatLon(date)` for day/night | no |
-| `map-vector.mjs` | Background outline, graticule, tropic/polar circles, countries, boundaries | yes (builds SVG DOM) |
+| `map-geometry.mjs` | Vector geometry shared by the web app and the print renderer: outline, graticule, circles, GeoJSON to path data, position colors | no |
+| `map-vector.mjs` | Web app vector layers: builds the SVG DOM from `map-geometry.mjs` | yes |
 | `map-raster.mjs` | Faux-inverse raster renderer on 1x1 deg cells, day/night blend | yes (touches canvas at import) |
 | `index.html` | Styles + entry script | -- |
 
 The DOM-free modules can be imported from Node (set `globalThis.Complex` before
 calling `project()`; it is only used at call time). `map-raster.mjs` cannot be
 imported in Node because it queries `canvas` at module load.
+Change vector geometry only in `map-geometry.mjs`, so the web app and print output
+always draw identical shapes.
 
 ## Coordinate system and gotchas
 

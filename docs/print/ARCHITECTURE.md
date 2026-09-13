@@ -60,8 +60,11 @@ web/                     optional static page
   `import Complex from 'complex.js'; globalThis.Complex = Complex;` and is imported
   first. (It is only needed at call time, not at import time.) A later cleanup could
   make `cahill-conformal.mjs` import Complex and give `index.html` an import map.
-- `map-vector.mjs` and `map-raster.mjs` are DOM-bound. Port their logic (outline,
-  graticule, special circles, cell inverse) into `print/` instead of importing.
+- Vector geometry (outline, graticule, circles, GeoJSON to path data, position
+  colors) lives in the DOM-free root module `map-geometry.mjs`. Both `map-vector.mjs`
+  (web app) and `print/layers/` use it, so one fix reaches both outputs.
+- `map-raster.mjs` is still DOM-bound; its cell inverse math gets the same
+  extraction in Phase 6.
 - The web app keeps working unchanged.
 
 ## Render context (passed to every layer)
