@@ -7,7 +7,8 @@
     "serve": "node scripts/serve.mjs",
     "capture-web": "node scripts/capture-web.mjs",
     "render": "node print/cli.mjs render",
-    "parity": "node scripts/check-parity.mjs"
+    "parity": "node scripts/check-parity.mjs",
+    "fetch-imagery": "node scripts/data/fetch-imagery.mjs"
   },
   "dependencies": {
     "@resvg/resvg-js": "2.6.2",

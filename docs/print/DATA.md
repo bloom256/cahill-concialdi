@@ -134,6 +134,26 @@ Regenerate with `node scripts/data/fetch-country-stats.mjs`; commit the refresh 
   non-ISO ids. Non-ASCII characters are stored as `\u` escapes, so the file stays ASCII
   while labels keep their diacritics.
 
+## Imagery sources
+
+`npm run fetch-imagery` downloads the pinned NASA Blue Marble: Next Generation images
+(topography and bathymetry, 21600x10800, 60 px per degree) into `data/raw/bmng/` and
+verifies their SHA-256 (see `scripts/data/fetch-imagery.mjs`):
+
+| Month | Record | File | Size |
+|---|---|---|---|
+| December 2004 | 73909 | `world.topo.bathy.200412.3x21600x10800.jpg` | 29.9 MB |
+| June 2004 | 73726 | `world.topo.bathy.200406.3x21600x10800.jpg` | 27.9 MB |
+
+- The repo's `nasa-blue-marble-ng.jpg` (3600x1800) is a winter month, closest to December.
+  It remains the web app's source.
+- 60 px per degree is about 300 dpi at the equator on a 150 cm print. Even larger
+  500 m tiles exist (8 tiles of 21600x21600 per month, `...3x21600x21600.A1.jpg` to
+  `D2`, about 45-55 MB each) if close-up detail ever needs more.
+- **License:** NASA states its images "generally are not subject to copyright in the
+  United States" and asks that NASA be acknowledged, without implying endorsement.
+  The Blue Marble page asks users to credit **"NASA Earth Observatory"**.
+
 ## Licenses and credits (for the cartouche)
 
 - **Projection:** Cahill-Concialdi Bat, Luca Concialdi (2015), a rearrangement of
