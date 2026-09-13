@@ -31,7 +31,7 @@ if (command !== 'render' || variantNames.length === 0) {
 for (const name of variantNames) {
 
   const startMs = performance.now();
-  const { svg, notes, toPage } = renderMap(await loadStyle(name));
+  const { svg, notes, toPage } = await renderMap(await loadStyle(name));
 
   const outDir = join(ROOT, 'out', 'latest', name);
   await mkdir(join(outDir, 'crops'), { recursive: true });

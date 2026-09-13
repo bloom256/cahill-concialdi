@@ -14,26 +14,24 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 
 // ------------------------------------------------------------------
 
-// Renders a resolved style (see styles.mjs) to { svg, notes, toPage }: a
-// complete SVG document string, remarks from layers, and the map Point to
-// page mm mapping. The SVG viewBox is in page millimeters; consecutive
-// map-space layers share one group that scales, positions, and tilts
-// untilted map coordinates.
-export function renderMap(style) {
+// Renders a resolved style (see styles.mjs) to a Promise of
+// { svg, notes, toPage }: a complete SVG document string, remarks from layers,
+// and the map Point to page mm mapping. The SVG viewBox is in page
+// millimeters; consecutive map-space layers share one group that scales,
+// positions, and tilts untilted map coordinates.
+export async function renderMap(style) {
 
   const ctx = createContext(style);
   const parts = [];
   let isInMapGroup = false;
 
-  LAYERS
-    .filter(layer => layer.enabled(style))
-    .forEach(layer => {
-      const isMapLayer = layer.space === 'map';
-      if (isMapLayer && !isInMapGroup) parts.push(`<g${attrs({ id: 'map', transform: ctx.mapTransform })}>`);
-      if (!isMapLayer && isInMapGroup) parts.push('</g>');
-      isInMapGroup = isMapLayer;
-      parts.push(layer.render(ctx));
-    });
+  for (const layer of LAYERS.filter(layer => layer.enabled(style))) {
+    const isMapLayer = layer.space === 'map';
+    if (isMapLayer && !isInMapGroup) parts.push(`<g${attrs({ id: 'map', transform: ctx.mapTransform })}>`);
+    if (!isMapLayer && isInMapGroup) parts.push('</g>');
+    isInMapGroup = isMapLayer;
+    parts.push(await layer.render(ctx));
+  }
   if (isInMapGroup) parts.push('</g>');
 
   // Embed the fonts layers used, so browsers render the same text as resvg

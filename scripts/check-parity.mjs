@@ -159,7 +159,7 @@ function compareLayers(webLayers, nodeLayers) {
 
 // ------------------------------------------------------------------
 
-const { svg } = renderMap(await loadStyle('seav-original'));
+const { svg } = await renderMap(await loadStyle('seav-original'));
 const nodePng = renderPng(svg, WIDTH_PX);
 
 await mkdir(OUT_DIR, { recursive: true });
