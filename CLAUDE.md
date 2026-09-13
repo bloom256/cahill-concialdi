@@ -116,7 +116,8 @@ npm run parity                       # seav-original vs. the web app; must pass 
 | `solar-position.mjs` | `getSunLatLon(date)` for day/night | no |
 | `map-geometry.mjs` | Vector geometry shared by the web app and the print renderer: outline, graticule, circles, GeoJSON to path data, position colors | no |
 | `map-vector.mjs` | Web app vector layers: builds the SVG DOM from `map-geometry.mjs` | yes |
-| `map-raster.mjs` | Faux-inverse raster renderer on 1x1 deg cells, day/night blend | yes (touches canvas at import) |
+| `map-raster-geometry.mjs` | Raster cell geometry shared by the web app and the print renderer: 1x1 deg `MapCell` faux inverse, `forEachMapCell()`. Change raster math only here | no |
+| `map-raster.mjs` | Web app raster renderer: canvas pixels via `map-raster-geometry.mjs`, day/night blend | yes (touches canvas at import) |
 | `index.html` | Styles + entry script | -- |
 
 The DOM-free modules can be imported from Node (set `globalThis.Complex` before

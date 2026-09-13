@@ -70,8 +70,9 @@ web/                     optional static page
 - Vector geometry (outline, graticule, circles, GeoJSON to path data, position
   colors) lives in the DOM-free root module `map-geometry.mjs`. Both `map-vector.mjs`
   (web app) and `print/layers/` use it, so one fix reaches both outputs.
-- `map-raster.mjs` is still DOM-bound; its cell inverse math gets the same
-  extraction in Phase 6.
+- Raster cell geometry (the 1x1 deg faux inverse projection) lives in the DOM-free
+  root module `map-raster-geometry.mjs`, used by both `map-raster.mjs` (web app) and
+  `print/layers/imagery.mjs`.
 - The web app keeps working unchanged.
 
 ## Render context (passed to every layer)
