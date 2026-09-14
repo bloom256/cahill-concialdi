@@ -1,15 +1,19 @@
 // ==================================================================
-// STYLE: GEO-LABELED-GRID
+// PRESET: PRINT GRID
 // ------------------------------------------------------------------
 
-// The November Blue Marble with labeled meridians and parallels, and the
-// equator, tropics, and polar circles named along their lines.
-// Changes vs. geo-blue-marble: the graticule labels only.
+// Shared grid settings for printed maps, not a map on its own:
+// - line weights in millimeters sized for a 150 cm print (the web app's widths
+//   print 3-4 times heavier: 0.7 mm graticule, 1.4 mm circles)
+// - labels on meridians, parallels, the equator, tropics and polar circles
+// Line colors stay with each style family.
 
 export default {
-  extends    : ['geo-blue-marble'],
-  name       : 'geo-labeled-grid',
-  description: 'November Blue Marble with labeled meridians, parallels, equator, tropics and polar circles',
+  name: 'preset-print-grid',
+
+  graticule: { width: '0.2mm' },
+
+  circles: { width: '0.35mm', dash: ['2.5mm', '1.5mm'] },
 
   graticuleLabels: {
     show                   : true,

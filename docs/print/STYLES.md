@@ -72,7 +72,7 @@ only linework, and the quiet graticule.
 | Variant | Change vs. original | Why |
 |---|---|---|
 | `seav-original` | None: 50m data, same unit widths | Exact parity with the web app |
-| `seav-upright` | No -5.4 deg tilt; North Pole on the vertical center line (`view.frame: 'pole-centered'`) | Owner's request: a symmetric, upright butterfly |
+| `seav-upright` | No -5.4 deg tilt; North Pole on the vertical center line (`view.frame: 'pole-centered'`); since 2026-09-14 also the shared print grid (`preset-print-grid`: 0.2 mm graticule, 0.35 mm circles, grid labels) | Owner's requests: a symmetric, upright butterfly; thinner lines and grid labels on all maps |
 | `seav-upright-stats` | Adds each country's name, population, GDP and GDP per capita inside the country (Barlow Condensed) | Owner's request: the numbers behind each country |
 | `seav-print` | Same colors and look; 10m geometry; line widths converted to printable mm | **The baseline for every comparison** |
 | `seav-centroid` | Area-weighted centroid or NE label point instead of the vertex mean; option to freeze the original 50m colors in a lookup table | The vertex mean is pulled toward detailed coastlines (Norway, Canada, Chile, archipelagos) and colors would drift with 10m data |
@@ -129,8 +129,7 @@ Build these after the `seav-*` family. They deliberately cover very different mo
 | `papercraft` | Unique to this projection | Octahedron faces subtly shaded like folded paper, fold lines, soft shadows at tears | subtle | Needs careful restraint |
 | `bathymetric` | Ocean-focused | Depth bands in 6-8 blues, land one warm tone, minimal borders | no | Bathymetry must be cut at all tears |
 | `hypsometric-relief` | Physical atlas | NE cross-blended hypso + thin borders + light labels | yes (60 px/deg) | Big downloads; raster renderer |
-| `geo-blue-marble` (built) | Photographic Earth, early winter | NASA Blue Marble NG, November 2004 (owner's choice), faint white graticule; no fills, borders or labels | yes (21600x10800 source, rendered at 150 dpi) | Imagery softer near face vertices; large file |
-| `geo-labeled-grid` (built) | Photographic Earth with a readable grid | November Blue Marble plus labels on meridians (every 30 deg), parallels (30/60 N and S) and the equator, tropics and polar circles | yes | Label density near the tears |
+| `geo-blue-marble` (built) | Photographic Earth, early winter | NASA Blue Marble NG, November 2004 (owner's choice), faint white graticule with the shared print grid (thin lines, grid labels); no fills or borders | yes (21600x10800 source, rendered at 150 dpi) | Imagery softer near face vertices; large file |
 | `geo-blue-marble-01-jan` ... `geo-blue-marble-12-dec` (built) | One per month of 2004, from winter snow to green summer | Same look with that month's imagery; compare them in a round | yes | Same |
 | `night-lights` | Dramatic | NASA Black Marble, faint coast, gold city labels | yes | Large black areas; banding |
 | `day-night-moment` | Personal, unique | Blue/Black Marble blended at a chosen date/time (existing day/night logic) | yes | Needs a meaningful moment |

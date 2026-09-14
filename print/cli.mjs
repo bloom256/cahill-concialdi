@@ -124,6 +124,7 @@ async function expandVariantNames(patterns) {
   const available = (await readdir(join(ROOT, 'print', 'styles')))
     .filter(filename => filename.endsWith('.mjs'))
     .map(filename => filename.slice(0, -'.mjs'.length))
+    .filter(name => !name.startsWith('preset-'))  // shared building blocks, not maps
     .sort();
   return patterns.flatMap(pattern => {
     if (!pattern.endsWith('*')) return [pattern];

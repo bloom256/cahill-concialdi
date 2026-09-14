@@ -93,6 +93,9 @@ npm run export -- geo-blue-marble-11-nov   # print files (300 dpi TIFF/JPEG, SVG
   separate snapshots.
 - Variants: `print/styles/<name>.mjs`, loaded by `print/styles.mjs` (`extends` + deep
   merge). Lengths are tokens: `'0.15u'` (map units), `'0.3mm'`, `'6pt'`.
+- `preset-*` style files are shared building blocks, not maps (wildcards skip them).
+  `preset-print-grid` (thin print line weights plus grid labels) is used by `seav-upright`,
+  so every variant except `seav-original` inherits it.
 - Layers: `print/layers/*.mjs`; stack order lives in `print/layers/index.mjs`.
 - `seav-original` must keep reproducing the web app exactly; never restyle it.
 - Parity and capture scripts need Chrome at the default path (or set `CHROME_PATH`).
