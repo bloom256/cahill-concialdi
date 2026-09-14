@@ -84,7 +84,7 @@ Not installed: Inkscape, ImageMagick, Ghostscript.
 npm install                          # once
 npm run render -- seav-original      # -> out/latest/seav-original/map.svg + overview.png
 npm run parity                       # seav-original vs. the web app; must pass after geometry changes
-npm run round -- geo-blue-marble-*   # comparison round -> out/rounds/<round>/index.html + manifest
+npm run round -- geo-blue-marble-*   # comparison round -> out/rounds/<round>/ (index.html, by-view/<view>/<variant>.png) + manifest
 ```
 
 - `print/render.mjs` builds the SVG as a string (no DOM). `print/cli.mjs` also writes a

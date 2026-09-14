@@ -22,6 +22,7 @@ import { renderMap } from './render.mjs';
 import { renderPng } from './png.mjs';
 import { renderCrops } from './crops.mjs';
 import { writeGallery } from './gallery.mjs';
+import { writeRoundViews } from './round-views.mjs';
 
 // ------------------------------------------------------------------
 
@@ -104,6 +105,7 @@ else {
   for (const name of variantNames) variants.push(await renderVariant(name, join(roundDir, name)));
 
   await writeGallery(roundDir, { round, variants });
+  const viewsDir = await writeRoundViews(roundDir, variants);
 
   const manifest = {
     round,
@@ -119,5 +121,6 @@ else {
 
   console.log(`Round ${round}: ${variants.length} variants`);
   console.log(`  gallery : ${join(roundDir, 'index.html')}`);
+  console.log(`  images  : ${viewsDir} (one folder per view, files named by variant)`);
   console.log(`  manifest: ${manifestPath}`);
 }
