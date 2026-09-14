@@ -44,7 +44,13 @@ one of its polygons:
 - If the full block does not fit at `minNameSize`, the label falls back to the name only
   (down to `minNameOnlySize`), else it is hidden. The render prints the counts and the
   hidden names.
-- Text is dark or light depending on the fill's luminance.
+- Text is dark or light depending on the fill's luminance, or a fixed color with a halo
+  (`textColor: 'fixed'`, used over imagery).
+- **Callouts** (`callouts.show`): every country that has no inside label gets its full block
+  next to it, with a dot and a leader line. Callouts are placed after all inside labels,
+  most populous first. Every small country's dot is reserved first, so no callout covers
+  another. Each callout takes the nearest free spot in rings of growing distance (2 to 75 mm)
+  and 12 directions, sideways first. No country is left unlabeled.
 
 **Implemented: `graticuleLabels`** (`print/layers/graticule-labels.mjs`, page space).
 Text on the grid itself:

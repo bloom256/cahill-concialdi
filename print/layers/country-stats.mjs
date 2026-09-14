@@ -2,14 +2,19 @@
 // LAYER: COUNTRY STATS LABELS
 // ------------------------------------------------------------------
 
-// Sets each country's name, population, GDP, and GDP per capita inside the
-// country. For every polygon of the country, candidate centers (the pole of
-// inaccessibility plus a grid of interior points) are tested at several
-// angles, and the largest text block that fits entirely inside the polygon
-// wins, so labels never cross borders or coastlines. Horizontal text is
-// preferred; rotated text wins only when it is clearly larger (long, narrow
-// countries such as Chile or the United Kingdom). Countries too small for the
-// full block get their name only, or no label at all.
+// Sets each country's name, population, GDP, and GDP per capita on the map.
+//
+// Inside labels: for every polygon of the country, candidate centers (the
+// pole of inaccessibility plus a grid of interior points) are tested at
+// several angles, and the largest text block that fits entirely inside the
+// polygon wins, so labels never cross borders or coastlines. Horizontal text
+// is preferred; rotated text wins only when it is clearly larger.
+//
+// Countries too small for an inside label either get their name only or no
+// label (default), or, with callouts enabled, get the full block placed next
+// to them with a leader line and a dot: callouts avoid every placed label and
+// the dots of other small countries, searching outward in rings, so every
+// country is labeled.
 
 import polylabel from 'polylabel';
 import { LatLon } from '../../data-types.mjs';
@@ -25,6 +30,12 @@ const GRID_STEPS              = 12;    // candidate grid divisions per bounding 
 const SIZE_SEARCH_STEPS       = 10;    // binary search iterations for the font size
 const GRID_PENALTY            = 1.08;  // a grid candidate must beat the pole by this much
 const DARK_TEXT_MIN_LUMINANCE = 0.3;   // relative luminance of the fill
+
+// Callouts: directions to try around the anchor (degrees, 0 = right,
+// 90 = up), sideways first because the text is horizontal
+const CALLOUT_DIRECTIONS_DEG = [0, 180, 30, -30, 150, -150, 60, -60, 120, -120, 90, -90];
+const ANCHOR_CLEARANCE_MM    = 1.2;   // space kept free around small countries' dots
+const PAGE_MARGIN_MM         = 2;
 
 // Compact number suffixes, largest first
 const MAGNITUDES = [[1e12, 'T'], [1e9, 'B'], [1e6, 'M'], [1e3, 'K']];
@@ -55,6 +66,17 @@ function rotatePoint([x, y], angle) {
   const sin = Math.sin(angle);
   return [x * cos - y * sin, x * sin + y * cos];
 }
+
+// Returns the axis-aligned bounds of a width x height rectangle centered on
+// (centerX, centerY) and rotated by angleDeg
+function getBlockBox(centerX, centerY, width, height, angleDeg = 0) {
+  const angle = angleDeg * Math.PI / 180;
+  const halfWidth  = (Math.abs(Math.cos(angle)) * width + Math.abs(Math.sin(angle)) * height) / 2;
+  const halfHeight = (Math.abs(Math.sin(angle)) * width + Math.abs(Math.cos(angle)) * height) / 2;
+  return { minX: centerX - halfWidth, maxX: centerX + halfWidth, minY: centerY - halfHeight, maxY: centerY + halfHeight };
+}
+
+const doBoxesOverlap = (a, b) => a.minX < b.maxX && b.minX < a.maxX && a.minY < b.maxY && b.minY < a.maxY;
 
 // ------------------------------------------------------------------
 
@@ -104,10 +126,20 @@ function isRectInPolygon({ minX, minY, maxX, maxY }, rings) {
   return true;
 }
 
+// Returns the area enclosed by a ring (shoelace formula)
+function getRingArea(ring) {
+  let doubleArea = 0;
+  for (let idx = 0, prevIdx = ring.length - 1; idx < ring.length; prevIdx = idx++) {
+    doubleArea += ring[prevIdx][0] * ring[idx][1] - ring[idx][0] * ring[prevIdx][1];
+  }
+  return Math.abs(doubleArea) / 2;
+}
+
 // ------------------------------------------------------------------
 
-// Projects a GeoJSON polygon to page mm and precomputes its candidate label
-// centers: the pole of inaccessibility first, then interior grid points
+// Projects a GeoJSON polygon to page mm and precomputes its area and
+// candidate label centers: the pole of inaccessibility first, then interior
+// grid points
 function preparePolygon(ctx, polygon) {
 
   const rings = polygon.map(ring => ring.map(([lon, lat]) => ctx.toPage(project(new LatLon(lat, lon)))));
@@ -124,7 +156,13 @@ function preparePolygon(ctx, polygon) {
     }
   }
 
-  return { rings, pole: [pole[0], pole[1]], gridCenters, diagonal: Math.hypot(maxX - minX, maxY - minY) };
+  return {
+    rings,
+    pole       : [pole[0], pole[1]],
+    gridCenters,
+    diagonal   : Math.hypot(maxX - minX, maxY - minY),
+    area       : getRingArea(rings[0]),
+  };
 }
 
 // Returns the block's { width, height } at name size 1, enlarged by the
@@ -190,8 +228,32 @@ function findBestFit(polygons, unitBlock, minSize, maxSize, config) {
   return best;
 }
 
+// Returns { centerX, centerY, box } for a callout block of the given size
+// (mm) near the anchor: the first spot, searching outward ring by ring, that
+// stays on the page and overlaps no placed label; or null
+function findCalloutSpot(ctx, anchor, width, height, distancesMm) {
+  for (const distance of distancesMm) {
+    for (const directionDeg of CALLOUT_DIRECTIONS_DEG) {
+      const direction = directionDeg * Math.PI / 180;
+      const dirX = Math.cos(direction);
+      const dirY = -Math.sin(direction);
+      const halfExtent = Math.abs(dirX) * width / 2 + Math.abs(dirY) * height / 2;
+      const centerX = anchor[0] + dirX * (distance + halfExtent);
+      const centerY = anchor[1] + dirY * (distance + halfExtent);
+      const box = getBlockBox(centerX, centerY, width, height);
+      if (
+        box.minX < PAGE_MARGIN_MM || box.maxX > ctx.page.widthMm  - PAGE_MARGIN_MM ||
+        box.minY < PAGE_MARGIN_MM || box.maxY > ctx.page.heightMm - PAGE_MARGIN_MM
+      ) continue;
+      if (ctx.labelBoxes.some(other => doBoxesOverlap(box, other))) continue;
+      return { centerX, centerY, box };
+    }
+  }
+  return null;
+}
+
 // Helpers exposed for debugging and tests
-export { isInPolygon, isRectInPolygon, preparePolygon, measureBlock, getLargestFit, findBestFit };
+export { isInPolygon, isRectInPolygon, preparePolygon, measureBlock, getLargestFit, findBestFit, findCalloutSpot };
 
 // ------------------------------------------------------------------
 
@@ -202,21 +264,57 @@ export default {
   render : ctx => {
 
     const config = ctx.style.countryStats;
+    const callouts = config.callouts?.show ? config.callouts : null;
     const stats = ctx.data(config.data).countries;
     const getFillColor = COLOR_MODES[ctx.style.land.mode];
     const maxNameSize = ctx.mm(config.maxNameSize);
     const minNameSize = ctx.mm(config.minNameSize);
     const minNameOnlySize = ctx.mm(config.minNameOnlySize);
+    const haloWidthEm = config.haloColor ? config.haloWidthEm : 0;
     const { ascender, descender } = getVerticalMetrics(config.font, config.nameWeight);
 
     ctx.useFont(config.font, config.nameWeight);
     ctx.useFont(config.font, config.statsWeight);
 
     const texts = [];
+    const leaders = [];
     const hiddenNames = [];
-    let numFull = 0;
-    let numNameOnly = 0;
-    let numRotated = 0;
+    const counts = { full: 0, nameOnly: 0, rotated: 0, callouts: 0, forced: 0 };
+
+    // Adds a text block (lines stacked around the center) and records its box
+    const addBlock = (lines, nameSize, centerX, centerY, angleDeg, color) => {
+
+      let lineTop = centerY - lines.reduce((sum, line) => sum + line.scale * nameSize * config.lineHeight, 0) / 2;
+      const tspans = lines.map(line => {
+        const fontSize = line.scale * nameSize;
+        const lineBox = fontSize * config.lineHeight;
+        const baseline = lineTop + lineBox / 2 + (ascender + descender) / 2 * fontSize;
+        lineTop += lineBox;
+        return `<tspan${attrs({
+          x             : centerX,
+          y             : baseline,
+          'font-size'   : fontSize,
+          'font-weight' : line.weight,
+          'stroke-width': haloWidthEm ? haloWidthEm * fontSize : undefined,
+        })}>${escapeXml(line.text)}</tspan>`;
+      });
+
+      const blockWidth  = Math.max(...lines.map(line => measureText(line.text, config.font, line.weight, line.scale * nameSize)));
+      const blockHeight = lines.reduce((sum, line) => sum + line.scale * nameSize * config.lineHeight, 0);
+      const box = getBlockBox(centerX, centerY, blockWidth + haloWidthEm * nameSize, blockHeight, angleDeg);
+      ctx.labelBoxes.push(box);
+
+      texts.push(`<text${attrs({
+        fill     : color,
+        transform: angleDeg
+          ? `rotate(${angleDeg} ${formatNumber(centerX)} ${formatNumber(centerY)})`
+          : undefined,
+      })}>${tspans.join('')}</text>`);
+      return box;
+    };
+
+    // Pass 1: inside labels; small countries wait for callouts
+    const pending = [];
 
     ctx.data(ctx.style.land.data).forEach(([id, multiPolygon]) => {
 
@@ -233,73 +331,119 @@ export default {
         .map(text => ({ text, weight: config.statsWeight, scale: config.statsScale }));
 
       const polygons = multiPolygon.map(polygon => preparePolygon(ctx, polygon));
+      const fillRgb = getFillColor ? getFillColor(multiPolygon) : [0, 0, 0];
+      const color = config.textColor === 'fixed'
+        ? config.color
+        : getLuminance(fillRgb) >= DARK_TEXT_MIN_LUMINANCE ? config.darkColor : config.lightColor;
 
-      // Prefer the full block; fall back to the name only; else hide
-      let lines = [nameLine, ...statLines];
       // Multi-line blocks stay horizontal unless the style allows rotating them
       const fullBlockConfig = config.rotateFullBlock ? config : { ...config, anglesDeg: [0] };
-      let fit = statLines.length
+      const lines = [nameLine, ...statLines];
+      const fit = statLines.length
         ? findBestFit(polygons, measureBlock(lines, config), minNameSize, maxNameSize, fullBlockConfig)
-        : { size: 0 };
+        : findBestFit(polygons, measureBlock(lines, config), minNameOnlySize, maxNameSize, config);
       if (fit.size) {
-        numFull++;
+        counts[statLines.length ? 'full' : 'nameOnly']++;
+        if (fit.angleDeg) counts.rotated++;
+        addBlock(lines, fit.size, fit.center[0], fit.center[1], fit.angleDeg, color);
+        return;
       }
-      else {
-        lines = [nameLine];
-        fit = findBestFit(polygons, measureBlock(lines, config), minNameOnlySize, maxNameSize, config);
-        if (!fit.size) {
-          hiddenNames.push(entry.name);
-          return;
-        }
-        numNameOnly++;
+
+      if (callouts) {
+        const largest = polygons.reduce((best, polygon) => polygon.area > best.area ? polygon : best);
+        pending.push({ entry, lines, anchor: largest.pole });
+        return;
       }
-      if (fit.angleDeg) numRotated++;
 
-      const fillRgb = getFillColor ? getFillColor(multiPolygon) : [0, 0, 0];
-      const color = getLuminance(fillRgb) >= DARK_TEXT_MIN_LUMINANCE ? config.darkColor : config.lightColor;
-
-      // Stack lines from the top of the block; each baseline centers the
-      // font's ascender-descender box within its line box
-      const [centerX, centerY] = fit.center;
-      let lineTop = centerY - lines.reduce((sum, line) => sum + line.scale * fit.size * config.lineHeight, 0) / 2;
-      const tspans = lines.map(line => {
-        const fontSize = line.scale * fit.size;
-        const lineBox = fontSize * config.lineHeight;
-        const baseline = lineTop + lineBox / 2 + (ascender + descender) / 2 * fontSize;
-        lineTop += lineBox;
-        return `<tspan${attrs({
-          x            : centerX,
-          y            : baseline,
-          'font-size'  : fontSize,
-          'font-weight': line.weight,
-        })}>${escapeXml(line.text)}</tspan>`;
-      });
-      // Record the label's page bounds so label layers rendered later avoid it
-      const blockWidth  = Math.max(...lines.map(line => measureText(line.text, config.font, line.weight, line.scale * fit.size)));
-      const blockHeight = lines.reduce((sum, line) => sum + line.scale * fit.size * config.lineHeight, 0);
-      const angle = fit.angleDeg * Math.PI / 180;
-      const halfWidth  = (Math.abs(Math.cos(angle)) * blockWidth + Math.abs(Math.sin(angle)) * blockHeight) / 2;
-      const halfHeight = (Math.abs(Math.sin(angle)) * blockWidth + Math.abs(Math.cos(angle)) * blockHeight) / 2;
-      ctx.labelBoxes.push({
-        minX: centerX - halfWidth , maxX: centerX + halfWidth,
-        minY: centerY - halfHeight, maxY: centerY + halfHeight,
-      });
-
-      texts.push(`<text${attrs({
-        fill     : color,
-        transform: fit.angleDeg
-          ? `rotate(${fit.angleDeg} ${formatNumber(centerX)} ${formatNumber(centerY)})`
-          : undefined,
-      })}>${tspans.join('')}</text>`);
+      // Without callouts: fall back to the name only, else hide
+      const nameFit = findBestFit(polygons, measureBlock([nameLine], config), minNameOnlySize, maxNameSize, config);
+      if (!nameFit.size) {
+        hiddenNames.push(entry.name);
+        return;
+      }
+      counts.nameOnly++;
+      if (nameFit.angleDeg) counts.rotated++;
+      addBlock([nameLine], nameFit.size, nameFit.center[0], nameFit.center[1], nameFit.angleDeg, color);
     });
 
+    // Pass 2: callouts, most populous first; every small country's dot is
+    // reserved up front so no callout label covers another small country
+    if (callouts) {
+
+      const nameSize = ctx.mm(callouts.nameSize);
+      const dotRadius = ctx.mm(callouts.dotRadius);
+      pending.forEach(({ anchor }) => ctx.labelBoxes.push({
+        minX: anchor[0] - ANCHOR_CLEARANCE_MM, maxX: anchor[0] + ANCHOR_CLEARANCE_MM,
+        minY: anchor[1] - ANCHOR_CLEARANCE_MM, maxY: anchor[1] + ANCHOR_CLEARANCE_MM,
+      }));
+      pending.sort((a, b) => (b.entry.population?.value ?? 0) - (a.entry.population?.value ?? 0));
+
+      pending.forEach(({ lines, anchor }) => {
+
+        const calloutLines = lines.map(line => ({ ...line, scale: line.scale === 1 ? 1 : callouts.statsScale }));
+        const width  = Math.max(...calloutLines.map(line => measureText(line.text, config.font, line.weight, line.scale * nameSize)))
+          + haloWidthEm * nameSize;
+        const height = calloutLines.reduce((sum, line) => sum + line.scale * nameSize * config.lineHeight, 0);
+
+        let spot = findCalloutSpot(ctx, anchor, width, height, callouts.distancesMm);
+        if (!spot) {
+          counts.forced++;
+          const centerX = anchor[0] + callouts.distancesMm[0] + width / 2;
+          spot = { centerX, centerY: anchor[1] };
+        }
+        counts.callouts++;
+
+        const box = addBlock(calloutLines, nameSize, spot.centerX, spot.centerY, 0, callouts.color ?? config.lightColor ?? config.color);
+        const targetX = Math.min(box.maxX, Math.max(box.minX, anchor[0]));
+        const targetY = Math.min(box.maxY, Math.max(box.minY, anchor[1]));
+        leaders.push(`<circle${attrs({ cx: anchor[0], cy: anchor[1], r: dotRadius })}/>`);
+        if (Math.hypot(targetX - anchor[0], targetY - anchor[1]) > dotRadius * 2) {
+          leaders.push(`<line${attrs({ x1: anchor[0], y1: anchor[1], x2: targetX, y2: targetY })}/>`);
+        }
+      });
+    }
+
     ctx.notes.push(
-      `countryStats: ${numFull} full labels, ${numNameOnly} name only (${numRotated} rotated in total), ` +
-      `${hiddenNames.length} hidden` + (hiddenNames.length ? ` (${hiddenNames.join(', ')})` : '')
+      `countryStats: ${counts.full} full labels, ${counts.nameOnly} name only (${counts.rotated} rotated), ` +
+      `${counts.callouts} callouts (${counts.forced} without a free spot), ${hiddenNames.length} hidden` +
+      (hiddenNames.length ? ` (${hiddenNames.join(', ')})` : '')
     );
 
+    // Leader lines and dots under the text, drawn twice: halo, then line
+    const leaderMarkup = leaders.join('');
+    const leaderGroups = callouts && leaderMarkup
+      ? (config.haloColor
+          ? `<g${attrs({
+              id               : 'country-stats-leader-halo',
+              stroke           : config.haloColor,
+              fill             : config.haloColor,
+              'stroke-width'   : ctx.mm(callouts.leaderWidth) + ctx.mm(callouts.leaderHaloWidth),
+              'stroke-opacity' : config.haloOpacity,
+              'fill-opacity'   : config.haloOpacity,
+              'stroke-linecap' : 'round',
+            })}>${leaderMarkup}</g>`
+          : '') +
+        `<g${attrs({
+          id              : 'country-stats-leaders',
+          stroke          : callouts.color ?? config.color,
+          fill            : callouts.color ?? config.color,
+          'stroke-width'  : ctx.mm(callouts.leaderWidth),
+          opacity         : callouts.opacity,
+          'stroke-linecap': 'round',
+        })}>${leaderMarkup}</g>`
+      : '';
+
     return (
-      `<g${attrs({ id: 'country-stats', 'font-family': config.font, 'text-anchor': 'middle' })}>` +
+      leaderGroups +
+      `<g${attrs({
+        id               : 'country-stats',
+        'font-family'    : config.font,
+        'text-anchor'    : 'middle',
+        stroke           : config.haloColor,
+        'stroke-opacity' : config.haloColor ? config.haloOpacity : undefined,
+        'stroke-linejoin': config.haloColor ? 'round' : undefined,
+        'paint-order'    : config.haloColor ? 'stroke' : undefined,
+      })}>` +
       texts.join('') +
       '</g>'
     );
