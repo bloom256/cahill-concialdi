@@ -112,4 +112,4 @@ Done when: preflight passes and a physical proof has been approved.
 | 0 | 2026-09-13 | seav original web app (vector) | Loved it at first sight: countries in different colors, only borders visible. Not enough, not perfect yet | Faithful print port (`seav-print`), then focused improvement variants |
 | 1 | 2026-09-13 | `seav-original` vs. `seav-upright` | Upright with the pole centered "looks beautiful"; every later variant must use the centered-pole view | Add country stats labels |
 | 2 | 2026-09-13 | `seav-upright-stats` | "So beautiful!" | Keep refining label fit; consider labels for microstates (outside with leaders) |
-| 3 | 2026-09-14 | Round `2026-09-14-r1`: `geo-blue-marble-01-jan` ... `geo-blue-marble-12-dec` | Wanted all 12 months saved to compare and choose (choice pending) | Pick a month; then consider labels or thin borders over the imagery |
+| 3 | 2026-09-14 | Round `2026-09-14-r1`: `geo-blue-marble-01-jan` ... `geo-blue-marble-12-dec` | Compared the months as image folders: "that is beautiful", chose November | `geo-blue-marble` uses November; export a 300 dpi print file; then consider labels or thin borders over the imagery |
