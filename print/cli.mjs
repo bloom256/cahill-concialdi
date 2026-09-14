@@ -8,9 +8,11 @@
 //   npm run round -- <variant or prefix*> [...]
 //     A comparison round in out/rounds/<round>/ with a gallery (index.html) and
 //     by-view image folders, plus its manifest in docs/print/rounds/<round>.json.
-//   npm run export -- <variant> [...] [--dpi 300]
+//   npm run export -- <variant> [...] [--dpi 300] [--existing]
 //     Print files in out/export/<variant>/: map.svg, map.tif (LZW), map.jpg,
-//     preview.jpg, and detail-europe.jpg (a 100% pixel crop to judge sharpness).
+//     preview.jpg, and detail-<region>.jpg (100% pixel views of every crop
+//     region, to check labels and lines without opening the huge files).
+//     --existing re-exports every variant that already has an export folder.
 // render and round write map.svg, overview.png, thumb.jpg, and crops/*.png per
 // variant. A name ending in * selects every style starting with that prefix.
 
@@ -25,7 +27,7 @@ import { project } from '../concialdi.mjs';
 import { loadStyle } from './styles.mjs';
 import { renderMap } from './render.mjs';
 import { renderPng, renderRaw } from './png.mjs';
-import { renderCrops } from './crops.mjs';
+import { renderCrops, CROP_WINDOWS } from './crops.mjs';
 import { writeGallery } from './gallery.mjs';
 import { writeRoundViews } from './round-views.mjs';
 
@@ -39,7 +41,6 @@ const THUMB_QUALITY       = 85;
 const EXPORT_DEFAULT_DPI  = 300;
 const EXPORT_JPEG_QUALITY = 95;
 const PREVIEW_WIDTH_PX    = 2400;
-const DETAIL_CENTER       = { lat: 50, lon: 12 };  // central Europe
 const DETAIL_WIDTH_PX     = 3000;
 const DETAIL_HEIGHT_PX    = 2000;
 
@@ -92,17 +93,19 @@ async function exportVariant(name, dpi) {
   await image.clone().jpeg({ quality: EXPORT_JPEG_QUALITY, chromaSubsampling: '4:4:4' }).toFile(join(outDir, 'map.jpg'));
   await image.clone().resize({ width: PREVIEW_WIDTH_PX }).jpeg({ quality: THUMB_QUALITY }).toFile(join(outDir, 'preview.jpg'));
 
-  const [centerX, centerY] = toPage(project(new LatLon(DETAIL_CENTER.lat, DETAIL_CENTER.lon)))
-    .map(mm => Math.round(mm * pxPerMm));
-  await image.clone()
-    .extract({
-      left  : Math.max(0, Math.min(width  - DETAIL_WIDTH_PX , centerX - DETAIL_WIDTH_PX  / 2)),
-      top   : Math.max(0, Math.min(height - DETAIL_HEIGHT_PX, centerY - DETAIL_HEIGHT_PX / 2)),
-      width : DETAIL_WIDTH_PX,
-      height: DETAIL_HEIGHT_PX,
-    })
-    .jpeg({ quality: EXPORT_JPEG_QUALITY })
-    .toFile(join(outDir, 'detail-europe.jpg'));
+  // 100% pixel views of every crop region
+  for (const { name: region, lat, lon } of CROP_WINDOWS) {
+    const [centerX, centerY] = toPage(project(new LatLon(lat, lon))).map(mm => Math.round(mm * pxPerMm));
+    await image.clone()
+      .extract({
+        left  : Math.max(0, Math.min(width  - DETAIL_WIDTH_PX , centerX - DETAIL_WIDTH_PX  / 2)),
+        top   : Math.max(0, Math.min(height - DETAIL_HEIGHT_PX, centerY - DETAIL_HEIGHT_PX / 2)),
+        width : DETAIL_WIDTH_PX,
+        height: DETAIL_HEIGHT_PX,
+      })
+      .jpeg({ quality: EXPORT_JPEG_QUALITY })
+      .toFile(join(outDir, `detail-${region}.jpg`));
+  }
 
   const getSizeMb = async filename => ((await stat(join(outDir, filename))).size / 1e6).toFixed(0);
   const seconds = ((performance.now() - startMs) / 1000).toFixed(1);
@@ -112,7 +115,7 @@ async function exportVariant(name, dpi) {
   );
   console.log(
     `  map.tif ${await getSizeMb('map.tif')} MB, map.jpg ${await getSizeMb('map.jpg')} MB, ` +
-    `map.svg ${await getSizeMb('map.svg')} MB, preview.jpg, detail-europe.jpg`
+    `map.svg ${await getSizeMb('map.svg')} MB, preview.jpg, ${CROP_WINDOWS.length} detail-<region>.jpg`
   );
   notes.forEach(note => console.log(`  ${note}`));
 }
@@ -171,7 +174,7 @@ if (command === 'export' && args.includes('--existing')) {
 if (!['render', 'round', 'export'].includes(command) || patterns.length === 0 || !(dpi > 0)) {
   console.error(
     'Usage: npm run render -- <variant> [...]  |  npm run round -- <variant or prefix*> [...]  |  ' +
-    'npm run export -- <variant> [...] [--dpi 300]'
+    'npm run export -- <variant> [...] [--dpi 300] [--existing]'
   );
   process.exit(1);
 }

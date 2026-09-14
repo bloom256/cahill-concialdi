@@ -17,8 +17,8 @@ export default {
   admin0: {
     show        : true,
     stroke      : '#ffffff',
-    opacity     : 0.45,
-    width       : '0.2mm',
+    opacity     : 0.7,
+    width       : '0.3mm',
     disputedDash: ['1mm', '0.6mm'],
   },
 
