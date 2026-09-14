@@ -113,3 +113,4 @@ Done when: preflight passes and a physical proof has been approved.
 | 1 | 2026-09-13 | `seav-original` vs. `seav-upright` | Upright with the pole centered "looks beautiful"; every later variant must use the centered-pole view | Add country stats labels |
 | 2 | 2026-09-13 | `seav-upright-stats` | "So beautiful!" | Keep refining label fit; consider labels for microstates (outside with leaders) |
 | 3 | 2026-09-14 | Round `2026-09-14-r1`: `geo-blue-marble-01-jan` ... `geo-blue-marble-12-dec` | Compared the months as image folders: "that is beautiful", chose November | `geo-blue-marble` uses November; export a 300 dpi print file; then consider labels or thin borders over the imagery |
+| 4 | 2026-09-14 | 300 dpi export of `geo-blue-marble-11-nov` (150 x 85.3 cm TIFF) | "That is quite amazing!" | Page to 150 x 90 cm with title and NASA credit; thin borders or labels over the imagery |
