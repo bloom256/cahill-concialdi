@@ -91,6 +91,10 @@ export function createContext(style) {
 
     // Human-readable remarks from layers (e.g. hidden labels), printed by the CLI
     notes: [],
+
+    // Placed labels as axis-aligned page-mm bounds { minX, minY, maxX, maxY } of
+    // their (possibly rotated) rectangles; label layers rendered later avoid them
+    labelBoxes: [],
   };
 }
 

@@ -55,6 +55,11 @@ Text on the grid itself:
 Each label follows its line's local direction (never upside down) and has a soft halo.
 Points on a tear of the map get a label on each side.
 
+**Label overlap:** label layers record their placed boxes in `ctx.labelBoxes`, and layers
+render in stack order. Country labels are placed first. A grid label that would overlap
+one slides along its own line in 2-degree steps (up to 12 degrees), and is skipped if no
+free spot exists. The render prints how many labels moved or were skipped.
+
 **Classes and priority** (higher first in collision resolution):
 
 1. Oceans and major seas -- large, italic or small caps, letterspaced, optionally curved

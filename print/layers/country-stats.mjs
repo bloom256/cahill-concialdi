@@ -274,6 +274,17 @@ export default {
           'font-weight': line.weight,
         })}>${escapeXml(line.text)}</tspan>`;
       });
+      // Record the label's page bounds so label layers rendered later avoid it
+      const blockWidth  = Math.max(...lines.map(line => measureText(line.text, config.font, line.weight, line.scale * fit.size)));
+      const blockHeight = lines.reduce((sum, line) => sum + line.scale * fit.size * config.lineHeight, 0);
+      const angle = fit.angleDeg * Math.PI / 180;
+      const halfWidth  = (Math.abs(Math.cos(angle)) * blockWidth + Math.abs(Math.sin(angle)) * blockHeight) / 2;
+      const halfHeight = (Math.abs(Math.sin(angle)) * blockWidth + Math.abs(Math.cos(angle)) * blockHeight) / 2;
+      ctx.labelBoxes.push({
+        minX: centerX - halfWidth , maxX: centerX + halfWidth,
+        minY: centerY - halfHeight, maxY: centerY + halfHeight,
+      });
+
       texts.push(`<text${attrs({
         fill     : color,
         transform: fit.angleDeg
