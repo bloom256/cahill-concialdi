@@ -50,5 +50,5 @@ export async function renderMap(style) {
     parts.join('\n') +
     '\n</svg>\n'
   );
-  return { svg, notes: ctx.notes, toPage: ctx.toPage };
+  return { svg, notes: ctx.notes, toPage: ctx.toPage, page: ctx.page };
 }

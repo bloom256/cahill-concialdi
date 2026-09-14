@@ -85,6 +85,7 @@ npm install                          # once
 npm run render -- seav-original      # -> out/latest/seav-original/map.svg + overview.png
 npm run parity                       # seav-original vs. the web app; must pass after geometry changes
 npm run round -- geo-blue-marble-*   # comparison round -> out/rounds/<round>/ (index.html, by-view/<view>/<variant>.png) + manifest
+npm run export -- geo-blue-marble-11-nov   # print files (300 dpi TIFF/JPEG, SVG) -> out/export/<variant>/
 ```
 
 - `print/render.mjs` builds the SVG as a string (no DOM). `print/cli.mjs` also writes a

@@ -6,30 +6,42 @@
 //   npm run render -- <variant> [<variant> ...]
 //     Working copies in out/latest/<variant>/.
 //   npm run round -- <variant or prefix*> [...]
-//     A comparison round in out/rounds/<round>/ with a gallery (index.html),
-//     plus its manifest in docs/print/rounds/<round>.json (commit it).
-// Each variant folder gets map.svg, overview.png, thumb.jpg, and crops/*.png.
-// A name ending in * selects every style starting with that prefix, in name order.
+//     A comparison round in out/rounds/<round>/ with a gallery (index.html) and
+//     by-view image folders, plus its manifest in docs/print/rounds/<round>.json.
+//   npm run export -- <variant> [...] [--dpi 300]
+//     Print files in out/export/<variant>/: map.svg, map.tif (LZW), map.jpg,
+//     preview.jpg, and detail-europe.jpg (a 100% pixel crop to judge sharpness).
+// render and round write map.svg, overview.png, thumb.jpg, and crops/*.png per
+// variant. A name ending in * selects every style starting with that prefix.
 
 import sharp from 'sharp';
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdir, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, stat, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { LatLon } from '../data-types.mjs';
+import { project } from '../concialdi.mjs';
 import { loadStyle } from './styles.mjs';
 import { renderMap } from './render.mjs';
-import { renderPng } from './png.mjs';
+import { renderPng, renderRaw } from './png.mjs';
 import { renderCrops } from './crops.mjs';
 import { writeGallery } from './gallery.mjs';
 import { writeRoundViews } from './round-views.mjs';
 
 // ------------------------------------------------------------------
 
-const ROOT              = resolve(fileURLToPath(import.meta.url), '../..');
-const OVERVIEW_WIDTH_PX = 4000;
-const THUMB_WIDTH_PX    = 1000;
-const THUMB_QUALITY     = 85;
+const ROOT                = resolve(fileURLToPath(import.meta.url), '../..');
+const MM_PER_INCH         = 25.4;
+const OVERVIEW_WIDTH_PX   = 4000;
+const THUMB_WIDTH_PX      = 1000;
+const THUMB_QUALITY       = 85;
+const EXPORT_DEFAULT_DPI  = 300;
+const EXPORT_JPEG_QUALITY = 95;
+const PREVIEW_WIDTH_PX    = 2400;
+const DETAIL_CENTER       = { lat: 50, lon: 12 };  // central Europe
+const DETAIL_WIDTH_PX     = 3000;
+const DETAIL_HEIGHT_PX    = 2000;
 
 // ------------------------------------------------------------------
 
@@ -55,6 +67,57 @@ async function renderVariant(name, outDir) {
 
   return { name, description: style.description ?? '', crops: crops.map(crop => crop.name) };
 }
+
+// ------------------------------------------------------------------
+
+// Renders one variant at print resolution into out/export/<variant>/
+async function exportVariant(name, dpi) {
+
+  const startMs = performance.now();
+  const style = await loadStyle(name);
+  if (style.imagery?.show) style.imagery = { ...style.imagery, dpi };
+  const { svg, notes, toPage, page } = await renderMap(style);
+
+  const outDir = join(ROOT, 'out', 'export', name);
+  await mkdir(outDir, { recursive: true });
+  await writeFile(join(outDir, 'map.svg'), svg);
+
+  const pxPerMm = dpi / MM_PER_INCH;
+  const { pixels, width, height } = renderRaw(svg, Math.round(page.widthMm * pxPerMm));
+  const image = sharp(pixels, { raw: { width, height, channels: 4 }, limitInputPixels: false })
+    .removeAlpha()
+    .withMetadata({ density: dpi });
+
+  await image.clone().tiff({ compression: 'lzw', predictor: 'horizontal' }).toFile(join(outDir, 'map.tif'));
+  await image.clone().jpeg({ quality: EXPORT_JPEG_QUALITY, chromaSubsampling: '4:4:4' }).toFile(join(outDir, 'map.jpg'));
+  await image.clone().resize({ width: PREVIEW_WIDTH_PX }).jpeg({ quality: THUMB_QUALITY }).toFile(join(outDir, 'preview.jpg'));
+
+  const [centerX, centerY] = toPage(project(new LatLon(DETAIL_CENTER.lat, DETAIL_CENTER.lon)))
+    .map(mm => Math.round(mm * pxPerMm));
+  await image.clone()
+    .extract({
+      left  : Math.max(0, Math.min(width  - DETAIL_WIDTH_PX , centerX - DETAIL_WIDTH_PX  / 2)),
+      top   : Math.max(0, Math.min(height - DETAIL_HEIGHT_PX, centerY - DETAIL_HEIGHT_PX / 2)),
+      width : DETAIL_WIDTH_PX,
+      height: DETAIL_HEIGHT_PX,
+    })
+    .jpeg({ quality: EXPORT_JPEG_QUALITY })
+    .toFile(join(outDir, 'detail-europe.jpg'));
+
+  const getSizeMb = async filename => ((await stat(join(outDir, filename))).size / 1e6).toFixed(0);
+  const seconds = ((performance.now() - startMs) / 1000).toFixed(1);
+  console.log(
+    `${name}: ${width}x${height} px at ${dpi} dpi = ` +
+    `${(page.widthMm / 10).toFixed(1)} x ${(page.heightMm / 10).toFixed(1)} cm in ${seconds} s -> ${outDir}`
+  );
+  console.log(
+    `  map.tif ${await getSizeMb('map.tif')} MB, map.jpg ${await getSizeMb('map.jpg')} MB, ` +
+    `map.svg ${await getSizeMb('map.svg')} MB, preview.jpg, detail-europe.jpg`
+  );
+  notes.forEach(note => console.log(`  ${note}`));
+}
+
+// ------------------------------------------------------------------
 
 // Expands names ending in * to all style names with that prefix
 async function expandVariantNames(patterns) {
@@ -86,10 +149,17 @@ const runGit = args => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }
 
 // ------------------------------------------------------------------
 
-const [command, ...patterns] = process.argv.slice(2);
+const [command, ...args] = process.argv.slice(2);
 
-if (!['render', 'round'].includes(command) || patterns.length === 0) {
-  console.error('Usage: npm run render -- <variant> [...]  |  npm run round -- <variant or prefix*> [...]');
+const dpiFlagIdx = args.indexOf('--dpi');
+const dpi = dpiFlagIdx >= 0 ? Number(args[dpiFlagIdx + 1]) : EXPORT_DEFAULT_DPI;
+const patterns = args.filter((_, idx) => dpiFlagIdx < 0 || (idx !== dpiFlagIdx && idx !== dpiFlagIdx + 1));
+
+if (!['render', 'round', 'export'].includes(command) || patterns.length === 0 || !(dpi > 0)) {
+  console.error(
+    'Usage: npm run render -- <variant> [...]  |  npm run round -- <variant or prefix*> [...]  |  ' +
+    'npm run export -- <variant> [...] [--dpi 300]'
+  );
   process.exit(1);
 }
 
@@ -97,6 +167,9 @@ const variantNames = await expandVariantNames(patterns);
 
 if (command === 'render') {
   for (const name of variantNames) await renderVariant(name, join(ROOT, 'out', 'latest', name));
+}
+else if (command === 'export') {
+  for (const name of variantNames) await exportVariant(name, dpi);
 }
 else {
   const round = getNextRoundName();
