@@ -130,6 +130,7 @@ Build these after the `seav-*` family. They deliberately cover very different mo
 | `bathymetric` | Ocean-focused | Depth bands in 6-8 blues, land one warm tone, minimal borders | no | Bathymetry must be cut at all tears |
 | `hypsometric-relief` | Physical atlas | NE cross-blended hypso + thin borders + light labels | yes (60 px/deg) | Big downloads; raster renderer |
 | `geo-blue-marble` (built) | Photographic Earth, early winter | NASA Blue Marble NG, November 2004 (owner's choice), faint white graticule; no fills, borders or labels | yes (21600x10800 source, rendered at 150 dpi) | Imagery softer near face vertices; large file |
+| `geo-labeled-grid` (built) | Photographic Earth with a readable grid | November Blue Marble plus labels on meridians (every 30 deg), parallels (30/60 N and S) and the equator, tropics and polar circles | yes | Label density near the tears |
 | `geo-blue-marble-01-jan` ... `geo-blue-marble-12-dec` (built) | One per month of 2004, from winter snow to green summer | Same look with that month's imagery; compare them in a round | yes | Same |
 | `night-lights` | Dramatic | NASA Black Marble, faint coast, gold city labels | yes | Large black areas; banding |
 | `day-night-moment` | Personal, unique | Blue/Black Marble blended at a chosen date/time (existing day/night logic) | yes | Needs a meaningful moment |

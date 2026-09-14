@@ -46,6 +46,15 @@ one of its polygons:
   hidden names.
 - Text is dark or light depending on the fill's luminance.
 
+**Implemented: `graticuleLabels`** (`print/layers/graticule-labels.mjs`, page space).
+Text on the grid itself:
+- Meridian labels (e.g. 30 degrees E) where each labeled meridian crosses the chosen latitudes.
+- Parallel labels (e.g. 60 degrees N) at the chosen longitudes.
+- Names of the equator, tropics and polar circles beside their lines.
+
+Each label follows its line's local direction (never upside down) and has a soft halo.
+Points on a tear of the map get a label on each side.
+
 **Classes and priority** (higher first in collision resolution):
 
 1. Oceans and major seas -- large, italic or small caps, letterspaced, optionally curved
