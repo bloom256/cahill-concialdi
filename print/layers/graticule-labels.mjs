@@ -123,7 +123,14 @@ export default {
           const halfWidth  = (Math.abs(Math.cos(angle)) * width + Math.abs(Math.sin(angle)) * height) / 2;
           const halfHeight = (Math.abs(Math.sin(angle)) * width + Math.abs(Math.cos(angle)) * height) / 2;
           const box = { minX: centerX - halfWidth, maxX: centerX + halfWidth, minY: centerY - halfHeight, maxY: centerY + halfHeight };
-          if (ctx.labelBoxes.some(other => doBoxesOverlap(box, other))) continue;
+
+          // Keep a gap to every placed label, leader line, and dot
+          const clearanceMm = config.clearance ? ctx.mm(config.clearance) : 0;
+          const paddedBox = {
+            minX: box.minX - clearanceMm, maxX: box.maxX + clearanceMm,
+            minY: box.minY - clearanceMm, maxY: box.maxY + clearanceMm,
+          };
+          if (ctx.labelBoxes.some(other => doBoxesOverlap(paddedBox, other))) continue;
 
           ctx.labelBoxes.push(box);
           if (shiftDeg !== 0) numShifted++;

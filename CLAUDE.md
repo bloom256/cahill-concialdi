@@ -86,6 +86,7 @@ npm run render -- seav-original      # -> out/latest/seav-original/map.svg + ove
 npm run parity                       # seav-original vs. the web app; must pass after geometry changes
 npm run round -- geo-blue-marble-*   # comparison round -> out/rounds/<round>/ (index.html, by-view/<view>/<variant>.png) + manifest
 npm run export -- geo-blue-marble-11-nov   # print files (300 dpi TIFF/JPEG, SVG) -> out/export/<variant>/
+npm run export -- --existing         # re-export every variant in out/export/ (always do this after visual changes)
 ```
 
 - `print/render.mjs` builds the SVG as a string (no DOM). `print/cli.mjs` also writes a

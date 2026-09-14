@@ -2,16 +2,25 @@
 // STYLE: GEO-STATS-NOV
 // ------------------------------------------------------------------
 
-// The November Blue Marble with every country's name, population, GDP, and
-// GDP per capita: inside the country where it fits, otherwise as a small
-// callout next to it with a leader line, so even the smallest countries are
-// labeled. White text with a dark halo reads over the imagery.
-// Changes vs. geo-blue-marble-11-nov: the country stats labels only.
+// The November Blue Marble with thin country borders and every country's
+// name, population, GDP, and GDP per capita: inside the country where it
+// fits, otherwise as a small callout next to it with a leader line, so even
+// the smallest countries are labeled. White text with a dark halo reads over
+// the imagery.
+// Changes vs. geo-blue-marble-11-nov: country borders and stats labels.
 
 export default {
   extends    : ['geo-blue-marble-11-nov'],
   name       : 'geo-stats-nov',
-  description: 'November Blue Marble with population and GDP for every country',
+  description: 'November Blue Marble with borders and population and GDP for every country',
+
+  admin0: {
+    show        : true,
+    stroke      : '#ffffff',
+    opacity     : 0.45,
+    width       : '0.2mm',
+    disputedDash: ['1mm', '0.6mm'],
+  },
 
   countryStats: {
     show           : true,

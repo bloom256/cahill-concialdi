@@ -27,6 +27,7 @@ export default {
         fill             : 'none',
         stroke           : admin0.stroke,
         'stroke-width'   : ctx.len(admin0.width),
+        'stroke-opacity' : admin0.opacity,
         'stroke-linejoin': 'round',
         'stroke-linecap' : 'round',
       })}>` +

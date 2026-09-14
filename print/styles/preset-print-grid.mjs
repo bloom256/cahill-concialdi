@@ -27,6 +27,7 @@ export default {
     haloColor              : '#02060d',
     haloWidth              : '1mm',
     haloOpacity            : 0.8,
+    clearance              : '0.8mm',  // minimum gap to country labels, leader lines and dots
     meridianEveryDeg       : 30,
     meridianLabelLatitudes : [40, -40],  // not 45 S: that parallel is a tear between 25 W and 65 E
     parallelEveryDeg       : 30,

@@ -397,8 +397,20 @@ export default {
         const targetX = Math.min(box.maxX, Math.max(box.minX, anchor[0]));
         const targetY = Math.min(box.maxY, Math.max(box.minY, anchor[1]));
         leaders.push(`<circle${attrs({ cx: anchor[0], cy: anchor[1], r: dotRadius })}/>`);
-        if (Math.hypot(targetX - anchor[0], targetY - anchor[1]) > dotRadius * 2) {
+        const leaderLength = Math.hypot(targetX - anchor[0], targetY - anchor[1]);
+        if (leaderLength > dotRadius * 2) {
           leaders.push(`<line${attrs({ x1: anchor[0], y1: anchor[1], x2: targetX, y2: targetY })}/>`);
+
+          // Register the leader as a chain of small boxes, so callouts and
+          // label layers placed later keep clear of it
+          const sampleStepMm = 1;
+          const halfSizeMm = 0.4;
+          const numSamples = Math.ceil(leaderLength / sampleStepMm);
+          for (let sample = 1; sample < numSamples; sample++) {
+            const x = anchor[0] + (targetX - anchor[0]) * sample / numSamples;
+            const y = anchor[1] + (targetY - anchor[1]) * sample / numSamples;
+            ctx.labelBoxes.push({ minX: x - halfSizeMm, maxX: x + halfSizeMm, minY: y - halfSizeMm, maxY: y + halfSizeMm });
+          }
         }
       });
     }

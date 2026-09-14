@@ -154,7 +154,19 @@ const [command, ...args] = process.argv.slice(2);
 
 const dpiFlagIdx = args.indexOf('--dpi');
 const dpi = dpiFlagIdx >= 0 ? Number(args[dpiFlagIdx + 1]) : EXPORT_DEFAULT_DPI;
-const patterns = args.filter((_, idx) => dpiFlagIdx < 0 || (idx !== dpiFlagIdx && idx !== dpiFlagIdx + 1));
+const patterns = args.filter((arg, idx) =>
+  arg !== '--existing' && (dpiFlagIdx < 0 || (idx !== dpiFlagIdx && idx !== dpiFlagIdx + 1))
+);
+
+// export --existing: re-export every variant that already has an export folder,
+// so print files stay in sync after changes
+if (command === 'export' && args.includes('--existing')) {
+  const exportDir = join(ROOT, 'out', 'export');
+  if (existsSync(exportDir)) {
+    const entries = await readdir(exportDir, { withFileTypes: true });
+    patterns.push(...entries.filter(entry => entry.isDirectory()).map(entry => entry.name));
+  }
+}
 
 if (!['render', 'round', 'export'].includes(command) || patterns.length === 0 || !(dpi > 0)) {
   console.error(
