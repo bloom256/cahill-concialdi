@@ -50,7 +50,7 @@ print/
   labels/overrides.json  hand-tuned label placement
   fonts/                 OFL font files
   raster/                offline raster renderer (Phase 6)
-  gallery/               gallery page + tiny local server (reads/writes round manifests)
+  gallery.mjs            static comparison page written into each round folder
 scripts/serve.mjs        static server with correct MIME types
 scripts/capture-web.mjs  headless Chrome capture of the web app
 scripts/check-parity.mjs seav-original vs. web app
