@@ -1,0 +1,81 @@
+{
+  "round": "2026-09-14-r1",
+  "created": "2026-09-14T06:27:04.626Z",
+  "commit": "de40aeb",
+  "dirty": false,
+  "variants": [
+    {
+      "name": "geo-blue-marble-01-jan",
+      "description": "NASA Blue Marble, January 2004: northern winter, heavy snow",
+      "rating": null,
+      "notes": ""
+    },
+    {
+      "name": "geo-blue-marble-02-feb",
+      "description": "NASA Blue Marble, February 2004: late winter, heavy snow",
+      "rating": null,
+      "notes": ""
+    },
+    {
+      "name": "geo-blue-marble-03-mar",
+      "description": "NASA Blue Marble, March 2004: end of winter, snow still wide",
+      "rating": null,
+      "notes": ""
+    },
+    {
+      "name": "geo-blue-marble-04-apr",
+      "description": "NASA Blue Marble, April 2004: spring thaw",
+      "rating": null,
+      "notes": ""
+    },
+    {
+      "name": "geo-blue-marble-05-may",
+      "description": "NASA Blue Marble, May 2004: late spring, forests turning green",
+      "rating": null,
+      "notes": ""
+    },
+    {
+      "name": "geo-blue-marble-06-jun",
+      "description": "NASA Blue Marble, June 2004: early summer, green, little snow",
+      "rating": null,
+      "notes": ""
+    },
+    {
+      "name": "geo-blue-marble-07-jul",
+      "description": "NASA Blue Marble, July 2004: midsummer, greenest north",
+      "rating": null,
+      "notes": ""
+    },
+    {
+      "name": "geo-blue-marble-08-aug",
+      "description": "NASA Blue Marble, August 2004: late summer",
+      "rating": null,
+      "notes": ""
+    },
+    {
+      "name": "geo-blue-marble-09-sep",
+      "description": "NASA Blue Marble, September 2004: early autumn",
+      "rating": null,
+      "notes": ""
+    },
+    {
+      "name": "geo-blue-marble-10-oct",
+      "description": "NASA Blue Marble, October 2004: autumn, first northern snow",
+      "rating": null,
+      "notes": ""
+    },
+    {
+      "name": "geo-blue-marble-11-nov",
+      "description": "NASA Blue Marble, November 2004: early winter, snow returning",
+      "rating": null,
+      "notes": ""
+    },
+    {
+      "name": "geo-blue-marble-12-dec",
+      "description": "NASA Blue Marble, December 2004: winter, heavy snow",
+      "rating": null,
+      "notes": ""
+    }
+  ],
+  "decision": ""
+}
