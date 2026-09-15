@@ -30,6 +30,7 @@ export default {
     nameWeight     : 600,
     statsWeight    : 400,
     statsScale     : 0.72,     // stat line size relative to the name size
+    minStatsPopulation: 1e6,   // smaller countries get only their name, in the stats weight
     lineHeight     : 1.1,      // line box height relative to its font size
     fill           : 0.95,     // block size relative to the space it fits in (margin)
     maxNameSize    : '10pt',

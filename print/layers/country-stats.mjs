@@ -307,7 +307,7 @@ export default {
     const texts = [];
     const leaders = [];
     const hiddenNames = [];
-    const counts = { full: 0, nameOnly: 0, rotated: 0, overlays: 0, callouts: 0, forced: 0 };
+    const counts = { full: 0, nameOnly: 0, rotated: 0, overlays: 0, callouts: 0, forced: 0, belowStatsPopulation: 0 };
 
     // Adds a text block (lines stacked around the center) and records its box
     const addBlock = (lines, nameSize, centerX, centerY, angleDeg, color) => {
@@ -349,8 +349,18 @@ export default {
       const entry = stats[id];
       if (!entry) return;
 
-      const nameLine = { text: entry.name, weight: config.nameWeight, scale: 1 };
-      const statLines = [
+      // Countries below minStatsPopulation (or without population data) get
+      // only their name, set in the regular stats weight
+      const isBelowStatsPopulation = Boolean(config.minStatsPopulation) &&
+        !(entry.population?.value >= config.minStatsPopulation);
+      if (isBelowStatsPopulation) counts.belowStatsPopulation++;
+
+      const nameLine = {
+        text  : entry.name,
+        weight: isBelowStatsPopulation ? config.statsWeight : config.nameWeight,
+        scale : 1,
+      };
+      const statLines = isBelowStatsPopulation ? [] : [
         entry.population      && `Pop ${formatCompact(entry.population.value)}`,
         entry.gdpUsd          && `GDP ${formatCompact(entry.gdpUsd.value, '$')}`,
         entry.gdpPerCapitaUsd && `GDP/cap ${formatCompact(entry.gdpPerCapitaUsd.value, '$')}`,
@@ -462,6 +472,7 @@ export default {
 
     ctx.notes.push(
       `countryStats: ${counts.full} full labels, ${counts.nameOnly} name only (${counts.rotated} rotated), ` +
+      `${counts.belowStatsPopulation} below the stats population, ` +
       `${counts.overlays} small labels on their country, ${counts.callouts} with leader lines ` +
       `(${counts.forced} without a free spot), ${hiddenNames.length} hidden` +
       (hiddenNames.length ? ` (${hiddenNames.join(', ')})` : '')

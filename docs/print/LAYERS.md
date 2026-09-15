@@ -44,6 +44,8 @@ one of its polygons:
 - If the full block does not fit at `minNameSize`, the label falls back to the name only
   (down to `minNameOnlySize`), else it is hidden. The render prints the counts and the
   hidden names.
+- `minStatsPopulation` (optional): countries below it, or without population data, get only
+  their name, set in the regular stats weight instead of bold (`geo-stats-nov`: 1 million).
 - Text is dark or light depending on the fill's luminance, or a fixed color with a halo
   (`textColor: 'fixed'`, used over imagery).
 - **Small countries** (`callouts.show`): every country without an inside label gets its full
