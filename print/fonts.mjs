@@ -18,7 +18,9 @@ const FONT_DIR = resolve(fileURLToPath(import.meta.url), '../fonts');
 // Family -> weight -> file name
 const FONT_FILES = {
   'Barlow Condensed': {
+    300: 'BarlowCondensed-Light.ttf',
     400: 'BarlowCondensed-Regular.ttf',
+    500: 'BarlowCondensed-Medium.ttf',
     600: 'BarlowCondensed-SemiBold.ttf',
   },
 };
