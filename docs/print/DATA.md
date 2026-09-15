@@ -122,13 +122,19 @@ forever, can only be removed by rewriting history, and hit GitHub limits
 display name, population, GDP and GDP per capita (current US$), each with year and source.
 Regenerate with `node scripts/data/fetch-country-stats.mjs`; commit the refresh on its own.
 
-- **Values:** World Bank WDI API (`SP.POP.TOTL`, `NY.GDP.MKTP.CD`, `NY.GDP.PCAP.CD`),
-  most recent non-empty value per country (mostly 2025).
-- **Taiwan:** not in the World Bank data; IMF DataMapper (`LP`, `NGDPD`, `NGDPDPC`)
-  for the same year. Recent IMF values may be estimates.
-- **No data:** Antarctica, Western Sahara, Northern Cyprus, Somaliland, Siachen Glacier, Vatican
-  City and many small territories; North Korea and the British Virgin Islands have population only.
-  These get a name-only label.
+- **Population:** UN World Population Prospects 2024 (UN DESA), total population, medium
+  variant, 2025 (a projection from the 2023 base).
+- **GDP (current US$):** the newest year available from the IMF World Economic Outlook
+  (DataMapper API `NGDPD`, up to 2025, may include IMF estimates) or the UN National Accounts
+  Main Aggregates Database (up to 2024). The IMF wins ties. The UN fills IMF gaps such as
+  Cuba, North Korea, Eritrea and Syria. IMF code aliases: Kosovo `UVK`, Palestine `WBG`.
+- **GDP per capita:** that GDP divided by the UN population of the same year, so both numbers
+  use one population source.
+- **No World Bank data** is used (owner's preference, 2026-09-15).
+- Downloads are cached in `data/raw/stats/`; `--refresh` fetches them again.
+- **No data:** Antarctica, Northern Cyprus, Somaliland, Siachen Glacier and small territories
+  the UN does not list separately (e.g. Aland, Christmas Island, Pitcairn). These get a
+  name-only label.
 - **Names:** English CLDR region names (`Intl.DisplayNames`) with map-friendly overrides
   (DR Congo, Congo, Myanmar, Palestine, Hong Kong, Macao) and names for Natural Earth's
   non-ISO ids. Non-ASCII characters are stored as `\u` escapes, so the file stays ASCII
