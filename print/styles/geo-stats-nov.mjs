@@ -28,8 +28,8 @@ export default {
     show              : true,
     data              : 'data/build/country-stats.json',
     font              : 'Barlow Condensed',
-    nameWeight        : 600,
-    statsWeight       : 400,
+    nameWeight        : 500,      // Medium: thinner glyphs stay crisp inside the outline
+    statsWeight       : 300,      // Light
     statsScale        : 0.72,     // stat line size relative to the name size
     minStatsPopulation: 1e6,      // smaller countries get only their name, in the stats weight
     lineHeight        : 1.1,      // line box height relative to its font size
