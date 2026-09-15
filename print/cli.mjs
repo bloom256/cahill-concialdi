@@ -8,7 +8,7 @@
 //   npm run round -- <variant or prefix*> [...]
 //     A comparison round in out/rounds/<round>/ with a gallery (index.html) and
 //     by-view image folders, plus its manifest in docs/print/rounds/<round>.json.
-//   npm run export -- <variant> [...] [--dpi 300] [--existing]
+//   npm run export -- <variant> [...] [--dpi 400] [--existing]
 //     Print files in out/export/<variant>/: map.svg, map.tif (LZW), map.jpg,
 //     preview.jpg, and detail-<region>.jpg (100% pixel views of every crop
 //     region, to check labels and lines without opening the huge files).
@@ -38,7 +38,7 @@ const MM_PER_INCH         = 25.4;
 const OVERVIEW_WIDTH_PX   = 4000;
 const THUMB_WIDTH_PX      = 1000;
 const THUMB_QUALITY       = 85;
-const EXPORT_DEFAULT_DPI  = 300;
+const EXPORT_DEFAULT_DPI  = 400;  // ~6 GB peak RAM; 500+ dpi needs strip rendering
 const EXPORT_JPEG_QUALITY = 95;
 const PREVIEW_WIDTH_PX    = 2400;
 const DETAIL_WIDTH_PX     = 3000;

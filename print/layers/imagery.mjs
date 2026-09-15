@@ -101,7 +101,10 @@ export default {
       }
     });
 
-    const jpeg = await sharp(pixels, { raw: { width: widthPx, height: heightPx, channels: NUM_CHANNELS } })
+    const jpeg = await sharp(pixels, {
+      raw             : { width: widthPx, height: heightPx, channels: NUM_CHANNELS },
+      limitInputPixels: false,  // 400 dpi exports exceed sharp's 268 MP default
+    })
       .jpeg({ quality: JPEG_QUALITY })
       .toBuffer();
     ctx.notes.push(`imagery: ${config.source} at ${config.dpi} dpi (${widthPx}x${heightPx} px, JPEG ${(jpeg.length / 1e6).toFixed(1)} MB)`);
