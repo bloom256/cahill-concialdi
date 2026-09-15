@@ -44,7 +44,7 @@ export default {
     color             : '#ffffff',
     haloColor         : '#02060d',
     haloWidthEm       : 0.28,     // halo stroke width relative to each line's font size
-    haloOpacity       : 0.75,
+    haloOpacity       : 1,        // fully opaque: a translucent halo made letters look see-through
     callouts          : {
       show            : true,
       nameSize        : '3pt',
@@ -55,7 +55,7 @@ export default {
       leaderWidth     : '0.12mm',
       leaderHaloWidth : '0.3mm',
       color           : '#ffffff',
-      opacity         : 0.9,
+      opacity         : 1,
     },
   },
 };

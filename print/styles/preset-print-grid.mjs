@@ -23,10 +23,10 @@ export default {
     specialSize            : '10pt',
     letterSpacing          : '0.03em',
     color                  : '#ffffff',
-    opacity                : 0.92,
+    opacity                : 1,
     haloColor              : '#02060d',
     haloWidth              : '1mm',
-    haloOpacity            : 0.8,
+    haloOpacity            : 1,        // fully opaque text and halo
     clearance              : '0.8mm',  // minimum gap to country labels, leader lines and dots
     meridianEveryDeg       : 30,
     meridianLabelLatitudes : [40, -40],  // not 45 S: that parallel is a tear between 25 W and 65 E
