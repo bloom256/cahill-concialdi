@@ -42,8 +42,8 @@ export default {
     rotateFullBlock   : false,
     textColor         : 'fixed',
     color             : '#ffffff',
-    haloColor         : null,     // no outline: a dark halo made small text look thick
-    haloWidthEm       : 0.28,     // used only with a haloColor
+    haloColor         : '#02060d',
+    haloWidthEm       : 0.28,     // halo stroke width relative to each line's font size
     haloOpacity       : 0.75,
     callouts          : {
       show            : true,
