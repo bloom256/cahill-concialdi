@@ -85,9 +85,9 @@ npm install                          # once
 npm run render -- seav-original      # -> out/latest/seav-original/map.svg + overview.png
 npm run parity                       # seav-original vs. the web app; must pass after geometry changes
 npm run round -- geo-blue-marble-*   # comparison round -> out/rounds/<round>/ (index.html, by-view/<view>/<variant>.png) + manifest
-npm run export -- geo-blue-marble-11-nov   # print files (400 dpi TIFF/JPEG, SVG) -> out/export/<variant>/
-                                     # 400 dpi is the safe limit on this machine (32 GB RAM, whole-map render);
-                                     # 500+ dpi needs strip rendering first
+npm run export -- geo-blue-marble-11-nov   # print files (300 dpi TIFF/JPEG, SVG) -> out/export/<variant>/
+                                     # print maps are 190 cm wide (preset-print-grid page); ~300-400 MP
+                                     # is the safe whole-map render limit on this machine (32 GB RAM)
 npm run export -- --existing         # re-export every variant in out/export/ (always do this after visual changes)
 ```
 

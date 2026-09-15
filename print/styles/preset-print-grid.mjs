@@ -11,6 +11,9 @@
 export default {
   name: 'preset-print-grid',
 
+  // 190 cm wide print (2 m of free wall); height follows the map shape (~108 cm)
+  page: { mapWidthMm: 1900 },
+
   graticule: { width: '0.2mm' },
 
   circles: { width: '0.35mm', dash: ['2.5mm', '1.5mm'] },
