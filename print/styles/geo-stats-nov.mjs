@@ -6,8 +6,9 @@
 // population, GDP, and GDP per capita. Labels are small (3-10 pt, meant to be
 // read up close on the high-resolution print): inside the country where they
 // fit, otherwise right on top of the small country, and only when that spot
-// is taken, a few mm away with a leader line. White text with a dark halo
-// reads over the imagery.
+// is taken, a few mm away with a leader line. Countries under 1 million
+// people show only their name. Plain white text without an outline, which
+// keeps small text crisp.
 // Changes vs. geo-blue-marble-11-nov: country borders and stats labels.
 
 export default {
@@ -24,27 +25,27 @@ export default {
   },
 
   countryStats: {
-    show           : true,
-    data           : 'data/build/country-stats.json',
-    font           : 'Barlow Condensed',
-    nameWeight     : 600,
-    statsWeight    : 400,
-    statsScale     : 0.72,     // stat line size relative to the name size
-    minStatsPopulation: 1e6,   // smaller countries get only their name, in the stats weight
-    lineHeight     : 1.1,      // line box height relative to its font size
-    fill           : 0.95,     // block size relative to the space it fits in (margin)
-    maxNameSize    : '10pt',
-    minNameSize    : '3pt',    // smallest inside label; below this, a small label on top
-    minNameOnlySize: '3pt',    // for countries without data (name only)
-    anglesDeg      : [0],
-    rotationPenalty: 1.35,
-    rotateFullBlock: false,
-    textColor      : 'fixed',
-    color          : '#ffffff',
-    haloColor      : '#02060d',
-    haloWidthEm    : 0.28,     // halo stroke width relative to each line's font size
-    haloOpacity    : 0.75,
-    callouts       : {
+    show              : true,
+    data              : 'data/build/country-stats.json',
+    font              : 'Barlow Condensed',
+    nameWeight        : 600,
+    statsWeight       : 400,
+    statsScale        : 0.72,     // stat line size relative to the name size
+    minStatsPopulation: 1e6,      // smaller countries get only their name, in the stats weight
+    lineHeight        : 1.1,      // line box height relative to its font size
+    fill              : 0.95,     // block size relative to the space it fits in (margin)
+    maxNameSize       : '10pt',
+    minNameSize       : '3pt',    // smallest inside label; below this, a small label on top
+    minNameOnlySize   : '3pt',    // for countries without data (name only)
+    anglesDeg         : [0],
+    rotationPenalty   : 1.35,
+    rotateFullBlock   : false,
+    textColor         : 'fixed',
+    color             : '#ffffff',
+    haloColor         : null,     // no outline: a dark halo made small text look thick
+    haloWidthEm       : 0.28,     // used only with a haloColor
+    haloOpacity       : 0.75,
+    callouts          : {
       show            : true,
       nameSize        : '3pt',
       statsScale      : 0.8,   // small labels' stats are relatively larger, for legibility
