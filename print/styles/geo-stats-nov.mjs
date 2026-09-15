@@ -3,8 +3,8 @@
 // ------------------------------------------------------------------
 
 // The November Blue Marble with country borders and every country's name,
-// population, GDP, and GDP per capita. Labels are small (3-10 pt, meant to be
-// read up close on the high-resolution print): inside the country where they
+// population, GDP, and GDP per capita. Labels are 6-14 pt on the 190 cm print
+// (6 pt chosen from a true-size comparison with 5 pt): inside the country where they
 // fit, otherwise right on top of the small country, and only when that spot
 // is taken, a few mm away with a leader line. Countries under 1 million
 // people show only their name. Plain white text without an outline, which
@@ -34,9 +34,9 @@ export default {
     minStatsPopulation: 1e6,      // smaller countries get only their name, in the stats weight
     lineHeight        : 1.1,      // line box height relative to its font size
     fill              : 0.95,     // block size relative to the space it fits in (margin)
-    maxNameSize       : '10pt',
-    minNameSize       : '3pt',    // smallest inside label; below this, a small label on top
-    minNameOnlySize   : '3pt',    // for countries without data (name only)
+    maxNameSize       : '14pt',
+    minNameSize       : '6pt',    // smallest inside label; below this, a small label on top
+    minNameOnlySize   : '6pt',    // for countries without data (name only)
     anglesDeg         : [0],
     rotationPenalty   : 1.35,
     rotateFullBlock   : false,
@@ -47,7 +47,7 @@ export default {
     haloOpacity       : 1,        // fully opaque: a translucent halo made letters look see-through
     callouts          : {
       show            : true,
-      nameSize        : '3pt',
+      nameSize        : '6pt',
       statsScale      : 0.8,   // small labels' stats are relatively larger, for legibility
       overlayOffsetsMm: [0, 1, 2, 3],  // first try right on the country, no leader line
       distancesMm     : [2, 4, 7, 11, 16, 22, 30, 40, 55, 75],

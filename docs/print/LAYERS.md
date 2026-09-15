@@ -56,8 +56,8 @@ one of its polygons:
   2. **Callout**: otherwise the block takes the nearest free spot in rings of growing distance
      (2 to 75 mm) and 12 directions, with a dot and a leader line.
 
-  No country is left unlabeled. In `geo-stats-nov` (3 pt minimum), only a few countries
-  need a leader line.
+  No country is left unlabeled. In `geo-stats-nov` (6 pt minimum on the 190 cm print),
+  about 14 countries need a leader line, mostly in the Balkans and the Leeward Islands.
 
 **Implemented: `graticuleLabels`** (`print/layers/graticule-labels.mjs`, page space).
 Text on the grid itself:
