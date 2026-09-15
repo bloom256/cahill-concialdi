@@ -11,10 +11,13 @@
 // is preferred; rotated text wins only when it is clearly larger.
 //
 // Countries too small for an inside label either get their name only or no
-// label (default), or, with callouts enabled, get the full block placed next
-// to them with a leader line and a dot: callouts avoid every placed label and
-// the dots of other small countries, searching outward in rings, so every
-// country is labeled.
+// label (default), or, with callouts enabled:
+// 1. overlay: the small block sits right on the country (or a few mm off),
+//    without a leader line, when that spot overlaps no other label;
+// 2. callout: otherwise the block goes to the nearest free spot further away,
+//    with a dot on the country and a leader line.
+// Every small country's dot area is reserved first, so no label covers
+// another small country, and every country is labeled.
 
 import polylabel from 'polylabel';
 import { LatLon } from '../../data-types.mjs';
@@ -36,6 +39,8 @@ const DARK_TEXT_MIN_LUMINANCE = 0.3;   // relative luminance of the fill
 const CALLOUT_DIRECTIONS_DEG = [0, 180, 30, -30, 150, -150, 60, -60, 120, -120, 90, -90];
 const ANCHOR_CLEARANCE_MM    = 1.2;   // space kept free around small countries' dots
 const PAGE_MARGIN_MM         = 2;
+const LEADER_SAMPLE_MM       = 1;     // leader lines are registered as boxes this far apart
+const LEADER_CLEARANCE_MM    = 0.4;   // half size of those boxes
 
 // Compact number suffixes, largest first
 const MAGNITUDES = [[1e12, 'T'], [1e9, 'B'], [1e6, 'M'], [1e3, 'K']];
@@ -77,6 +82,10 @@ function getBlockBox(centerX, centerY, width, height, angleDeg = 0) {
 }
 
 const doBoxesOverlap = (a, b) => a.minX < b.maxX && b.minX < a.maxX && a.minY < b.maxY && b.minY < a.maxY;
+
+const isOffPage = (ctx, box) =>
+  box.minX < PAGE_MARGIN_MM || box.maxX > ctx.page.widthMm  - PAGE_MARGIN_MM ||
+  box.minY < PAGE_MARGIN_MM || box.maxY > ctx.page.heightMm - PAGE_MARGIN_MM;
 
 // ------------------------------------------------------------------
 
@@ -228,6 +237,25 @@ function findBestFit(polygons, unitBlock, minSize, maxSize, config) {
   return best;
 }
 
+// Returns { centerX, centerY, box } for a block centered on the anchor or a
+// few mm off it (close enough to need no leader line): the first spot among
+// the center offsets that overlaps no placed label, or null. ignoreBox is
+// the country's own reserved dot area.
+function findOverlaySpot(ctx, anchor, width, height, offsetsMm, ignoreBox) {
+  for (const offset of offsetsMm) {
+    for (const directionDeg of offset === 0 ? [0] : CALLOUT_DIRECTIONS_DEG) {
+      const direction = directionDeg * Math.PI / 180;
+      const centerX = anchor[0] + Math.cos(direction) * offset;
+      const centerY = anchor[1] - Math.sin(direction) * offset;
+      const box = getBlockBox(centerX, centerY, width, height);
+      if (isOffPage(ctx, box)) continue;
+      if (ctx.labelBoxes.some(other => other !== ignoreBox && doBoxesOverlap(box, other))) continue;
+      return { centerX, centerY, box };
+    }
+  }
+  return null;
+}
+
 // Returns { centerX, centerY, box } for a callout block of the given size
 // (mm) near the anchor: the first spot, searching outward ring by ring, that
 // stays on the page and overlaps no placed label; or null
@@ -241,10 +269,7 @@ function findCalloutSpot(ctx, anchor, width, height, distancesMm) {
       const centerX = anchor[0] + dirX * (distance + halfExtent);
       const centerY = anchor[1] + dirY * (distance + halfExtent);
       const box = getBlockBox(centerX, centerY, width, height);
-      if (
-        box.minX < PAGE_MARGIN_MM || box.maxX > ctx.page.widthMm  - PAGE_MARGIN_MM ||
-        box.minY < PAGE_MARGIN_MM || box.maxY > ctx.page.heightMm - PAGE_MARGIN_MM
-      ) continue;
+      if (isOffPage(ctx, box)) continue;
       if (ctx.labelBoxes.some(other => doBoxesOverlap(box, other))) continue;
       return { centerX, centerY, box };
     }
@@ -253,7 +278,10 @@ function findCalloutSpot(ctx, anchor, width, height, distancesMm) {
 }
 
 // Helpers exposed for debugging and tests
-export { isInPolygon, isRectInPolygon, preparePolygon, measureBlock, getLargestFit, findBestFit, findCalloutSpot };
+export {
+  isInPolygon, isRectInPolygon, preparePolygon, measureBlock, getLargestFit, findBestFit,
+  findOverlaySpot, findCalloutSpot,
+};
 
 // ------------------------------------------------------------------
 
@@ -279,7 +307,7 @@ export default {
     const texts = [];
     const leaders = [];
     const hiddenNames = [];
-    const counts = { full: 0, nameOnly: 0, rotated: 0, callouts: 0, forced: 0 };
+    const counts = { full: 0, nameOnly: 0, rotated: 0, overlays: 0, callouts: 0, forced: 0 };
 
     // Adds a text block (lines stacked around the center) and records its box
     const addBlock = (lines, nameSize, centerX, centerY, angleDeg, color) => {
@@ -313,7 +341,7 @@ export default {
       return box;
     };
 
-    // Pass 1: inside labels; small countries wait for callouts
+    // Pass 1: inside labels; small countries wait for pass 2
     const pending = [];
 
     ctx.data(ctx.style.land.data).forEach(([id, multiPolygon]) => {
@@ -366,50 +394,67 @@ export default {
       addBlock([nameLine], nameFit.size, nameFit.center[0], nameFit.center[1], nameFit.angleDeg, color);
     });
 
-    // Pass 2: callouts, most populous first; every small country's dot is
-    // reserved up front so no callout label covers another small country
+    // Pass 2: small countries, most populous first. Every small country's dot
+    // area is reserved up front, so no label covers another small country.
     if (callouts) {
 
       const nameSize = ctx.mm(callouts.nameSize);
       const dotRadius = ctx.mm(callouts.dotRadius);
-      pending.forEach(({ anchor }) => ctx.labelBoxes.push({
-        minX: anchor[0] - ANCHOR_CLEARANCE_MM, maxX: anchor[0] + ANCHOR_CLEARANCE_MM,
-        minY: anchor[1] - ANCHOR_CLEARANCE_MM, maxY: anchor[1] + ANCHOR_CLEARANCE_MM,
-      }));
+      const color = callouts.color ?? config.lightColor ?? config.color;
+
+      pending.forEach(item => {
+        item.anchorBox = {
+          minX: item.anchor[0] - ANCHOR_CLEARANCE_MM, maxX: item.anchor[0] + ANCHOR_CLEARANCE_MM,
+          minY: item.anchor[1] - ANCHOR_CLEARANCE_MM, maxY: item.anchor[1] + ANCHOR_CLEARANCE_MM,
+        };
+        ctx.labelBoxes.push(item.anchorBox);
+      });
       pending.sort((a, b) => (b.entry.population?.value ?? 0) - (a.entry.population?.value ?? 0));
 
-      pending.forEach(({ lines, anchor }) => {
+      pending.forEach(({ lines, anchor, anchorBox }) => {
 
-        const calloutLines = lines.map(line => ({ ...line, scale: line.scale === 1 ? 1 : callouts.statsScale }));
-        const width  = Math.max(...calloutLines.map(line => measureText(line.text, config.font, line.weight, line.scale * nameSize)))
+        const smallLines = lines.map(line => ({ ...line, scale: line.scale === 1 ? 1 : callouts.statsScale }));
+        const width  = Math.max(...smallLines.map(line => measureText(line.text, config.font, line.weight, line.scale * nameSize)))
           + haloWidthEm * nameSize;
-        const height = calloutLines.reduce((sum, line) => sum + line.scale * nameSize * config.lineHeight, 0);
+        const height = smallLines.reduce((sum, line) => sum + line.scale * nameSize * config.lineHeight, 0);
 
+        // 1. Right on the country, when that spot is free: no leader line
+        const overlay = callouts.overlayOffsetsMm
+          ? findOverlaySpot(ctx, anchor, width, height, callouts.overlayOffsetsMm, anchorBox)
+          : null;
+        if (overlay) {
+          counts.overlays++;
+          addBlock(smallLines, nameSize, overlay.centerX, overlay.centerY, 0, color);
+          return;
+        }
+
+        // 2. Further away, with a dot and a leader line
         let spot = findCalloutSpot(ctx, anchor, width, height, callouts.distancesMm);
         if (!spot) {
           counts.forced++;
-          const centerX = anchor[0] + callouts.distancesMm[0] + width / 2;
-          spot = { centerX, centerY: anchor[1] };
+          spot = { centerX: anchor[0] + callouts.distancesMm[0] + width / 2, centerY: anchor[1] };
         }
         counts.callouts++;
 
-        const box = addBlock(calloutLines, nameSize, spot.centerX, spot.centerY, 0, callouts.color ?? config.lightColor ?? config.color);
+        const box = addBlock(smallLines, nameSize, spot.centerX, spot.centerY, 0, color);
         const targetX = Math.min(box.maxX, Math.max(box.minX, anchor[0]));
         const targetY = Math.min(box.maxY, Math.max(box.minY, anchor[1]));
         leaders.push(`<circle${attrs({ cx: anchor[0], cy: anchor[1], r: dotRadius })}/>`);
+
         const leaderLength = Math.hypot(targetX - anchor[0], targetY - anchor[1]);
         if (leaderLength > dotRadius * 2) {
           leaders.push(`<line${attrs({ x1: anchor[0], y1: anchor[1], x2: targetX, y2: targetY })}/>`);
 
-          // Register the leader as a chain of small boxes, so callouts and
-          // label layers placed later keep clear of it
-          const sampleStepMm = 1;
-          const halfSizeMm = 0.4;
-          const numSamples = Math.ceil(leaderLength / sampleStepMm);
+          // Register the leader as a chain of small boxes, so labels placed
+          // later keep clear of it
+          const numSamples = Math.ceil(leaderLength / LEADER_SAMPLE_MM);
           for (let sample = 1; sample < numSamples; sample++) {
             const x = anchor[0] + (targetX - anchor[0]) * sample / numSamples;
             const y = anchor[1] + (targetY - anchor[1]) * sample / numSamples;
-            ctx.labelBoxes.push({ minX: x - halfSizeMm, maxX: x + halfSizeMm, minY: y - halfSizeMm, maxY: y + halfSizeMm });
+            ctx.labelBoxes.push({
+              minX: x - LEADER_CLEARANCE_MM, maxX: x + LEADER_CLEARANCE_MM,
+              minY: y - LEADER_CLEARANCE_MM, maxY: y + LEADER_CLEARANCE_MM,
+            });
           }
         }
       });
@@ -417,7 +462,8 @@ export default {
 
     ctx.notes.push(
       `countryStats: ${counts.full} full labels, ${counts.nameOnly} name only (${counts.rotated} rotated), ` +
-      `${counts.callouts} callouts (${counts.forced} without a free spot), ${hiddenNames.length} hidden` +
+      `${counts.overlays} small labels on their country, ${counts.callouts} with leader lines ` +
+      `(${counts.forced} without a free spot), ${hiddenNames.length} hidden` +
       (hiddenNames.length ? ` (${hiddenNames.join(', ')})` : '')
     );
 
@@ -435,12 +481,15 @@ export default {
               'stroke-linecap' : 'round',
             })}>${leaderMarkup}</g>`
           : '') +
+        // stroke/fill opacity instead of group opacity: resvg panics on an
+        // opacity group whose content lies entirely outside the rendered view
         `<g${attrs({
           id              : 'country-stats-leaders',
           stroke          : callouts.color ?? config.color,
           fill            : callouts.color ?? config.color,
           'stroke-width'  : ctx.mm(callouts.leaderWidth),
-          opacity         : callouts.opacity,
+          'stroke-opacity': callouts.opacity,
+          'fill-opacity'  : callouts.opacity,
           'stroke-linecap': 'round',
         })}>${leaderMarkup}</g>`
       : '';

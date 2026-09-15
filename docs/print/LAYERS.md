@@ -46,11 +46,16 @@ one of its polygons:
   hidden names.
 - Text is dark or light depending on the fill's luminance, or a fixed color with a halo
   (`textColor: 'fixed'`, used over imagery).
-- **Callouts** (`callouts.show`): every country that has no inside label gets its full block
-  next to it, with a dot and a leader line. Callouts are placed after all inside labels,
-  most populous first. Every small country's dot is reserved first, so no callout covers
-  another. Each callout takes the nearest free spot in rings of growing distance (2 to 75 mm)
-  and 12 directions, sideways first. No country is left unlabeled.
+- **Small countries** (`callouts.show`): every country without an inside label gets its full
+  block, at `callouts.nameSize`, after all inside labels are placed (most populous first).
+  Every small country's dot area is reserved first, so no label covers another small country.
+  1. **On top** (`overlayOffsetsMm`): the block is centered on the country, or up to a few mm
+     off, without a leader line, if that spot overlaps no other label.
+  2. **Callout**: otherwise the block takes the nearest free spot in rings of growing distance
+     (2 to 75 mm) and 12 directions, with a dot and a leader line.
+
+  No country is left unlabeled. In `geo-stats-nov` (2 pt minimum), only about 1 country
+  needs a leader line.
 
 **Implemented: `graticuleLabels`** (`print/layers/graticule-labels.mjs`, page space).
 Text on the grid itself:
