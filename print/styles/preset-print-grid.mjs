@@ -14,7 +14,7 @@ export default {
   // 190 cm wide print (2 m of free wall); height follows the map shape (~108 cm),
   // less the empty ocean below Africa's tip: the lowest land on the page is Cape
   // Agulhas at 987 mm, so cutting 85 mm leaves a 9 mm margin under it and no land
-  page: { mapWidthMm: 1900, cropBottomMm: 85 },
+  page: { mapWidthMm: 1900, cropTopMm: 45, cropBottomMm: 85 },
 
   graticule: { width: '0.2mm' },
 

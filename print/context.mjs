@@ -137,15 +137,16 @@ function resolveView(viewStyle = {}) {
 // ------------------------------------------------------------------
 
 // Page size defaults to the map extent; the map is centered on the page.
-// `cropBottomMm` shortens the page from below instead: the map is aligned to
-// the top and everything past the new bottom edge is clipped away. The bat
-// shape ends in empty ocean below Africa's tip, which is what this cuts.
+// `cropTopMm` and `cropBottomMm` shorten the page instead, sliding the map up
+// so that everything past the new edges is clipped away. The bat shape ends in
+// empty ocean above the Aleutians and below Africa's tip, which is what these cut.
 function resolvePage(pageStyle, view) {
   const mapWidthMm   = pageStyle.mapWidthMm;
   const mapHeightMm  = mapWidthMm * view.height / view.width;
+  const cropTopMm    = pageStyle.cropTopMm    ?? 0;
   const cropBottomMm = pageStyle.cropBottomMm ?? 0;
   const widthMm      = pageStyle.widthMm  ?? mapWidthMm;
-  const heightMm     = pageStyle.heightMm ?? mapHeightMm - cropBottomMm;
+  const heightMm     = pageStyle.heightMm ?? mapHeightMm - cropTopMm - cropBottomMm;
   return {
     widthMm,
     heightMm,
@@ -153,7 +154,7 @@ function resolvePage(pageStyle, view) {
     mapHeightMm,
     mapOffsetMm: {
       x: (widthMm - mapWidthMm) / 2,
-      y: cropBottomMm ? 0 : (heightMm - mapHeightMm) / 2,
+      y: cropTopMm || cropBottomMm ? -cropTopMm : (heightMm - mapHeightMm) / 2,
     },
   };
 }

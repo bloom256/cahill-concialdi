@@ -1,7 +1,9 @@
 # Print Specs
 
-Target: **190 x 99.6 cm, landscape** (map 1900 mm wide, 85 mm cropped off the bottom
-where the bat shape holds only empty ocean; untrimmed it would be 190 x 108 cm).
+Target: **190 x 95.1 cm, landscape** (map 1900 mm wide, with 45 mm cropped off the top
+and 85 mm off the bottom, where the bat shape holds only empty ocean; untrimmed it would
+be 190 x 108 cm). The sides give almost nothing: land comes within 15 mm of the right
+edge, and cropping asymmetrically would push the North Pole off center.
 The 150 x 90 cm figures below are the original plan, kept for the layout math.
 
 ## Size math
@@ -14,7 +16,7 @@ The projected map extent is 302 x 178 SVG units (aspect 1.697). The page
 | A: edge to edge | 1500 mm | 4.967 | 884 mm | 0 | 8 mm |
 | B: slim margin (default) | 1450 mm | 4.801 | 855 mm | 25 mm | 23 mm |
 | C: wide margin | 1400 mm | 4.636 | 825 mm | 50 mm | 37 mm |
-| D: current print | 1900 mm | 5.962 | 1081 mm, cropped to 996 mm | 0 | 0 (9 mm of ocean under Cape Agulhas) |
+| D: current print | 1900 mm | 5.962 | 1081 mm, cropped to 951 mm | 0 (15 mm to the nearest land) | 0 (10 mm of ocean above Kiritimati, 9 mm below Cape Agulhas) |
 
 `mmPerUnit = mapWidthMm / view.width`, where the view is 302 units wide with the
 `original` frame and 318.7 units with `pole-centered`, which every print map uses
