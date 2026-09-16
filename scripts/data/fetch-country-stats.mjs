@@ -5,9 +5,10 @@
 // Builds data/build/country-stats.json for every country id in
 // ne-country-areas.json from:
 // - population: UN World Population Prospects 2024, medium variant, 2025
-// - GDP (current US$): the newest year available from the IMF World Economic
-//   Outlook (DataMapper API, up to 2025) or the UN National Accounts Main
-//   Aggregates (up to 2024); the IMF wins ties
+// - GDP (current US$): the newest year available from the UN National
+//   Accounts Main Aggregates Database (UNSD). IMF data is not used: the IMF
+//   requires permission for commercial reuse, and this map is meant to be
+//   sold. UNdata may be copied and distributed freely with a citation.
 // - GDP per capita: that GDP divided by the UN population of the same year,
 //   so both numbers rest on one population source
 // The output file is committed as the pinned snapshot, so renders never
@@ -28,22 +29,20 @@ const OUT_FILE  = join(ROOT, 'data', 'build', 'country-stats.json');
 const CACHE_DIR = join(ROOT, 'data', 'raw', 'stats');
 
 const UN_WPP_URL = 'https://population.un.org/wpp/assets/Excel%20Files/1_Indicator%20(Standard)/CSV_FILES/WPP2024_TotalPopulationBySex.csv.gz';
-const IMF_GDP_URL = 'https://www.imf.org/external/datamapper/api/v1/NGDPD';
 const UN_AMA_URL = 'https://unstats.un.org/unsd/amaapi/api/file/2';
 
 const POPULATION_YEAR     = 2025;
 const LATEST_GDP_YEAR     = 2025;
 const EARLIEST_GDP_YEAR   = 2015;   // older values are not used
-const IMF_GDP_MULTIPLIER  = 1e9;    // NGDPD is in billions of US$
 const UN_WPP_MULTIPLIER   = 1e3;    // PopTotal is in thousands
 const UN_AMA_GDP_INDICATOR = 'Gross Domestic Product (GDP)';
 
 const SOURCE_UN_WPP = 'UN WPP 2024';
-const SOURCE_IMF    = 'IMF WEO';
 const SOURCE_UN_AMA = 'UN National Accounts';
 
-// ISO2 codes whose IMF code is not the UN ISO3 code
-const IMF_CODE_ALIASES = { XK: 'UVK', PS: 'WBG' };
+// Countries the UN National Accounts report in parts, by UN M49 LocID:
+// Tanzania (834) as the Mainland (835) and Zanzibar (836)
+const UN_AMA_PARTS = { 834: [835, 836] };
 
 // Map-friendly names where the built-in CLDR names read awkwardly, plus the
 // non-ISO ids of Natural Earth features
@@ -127,18 +126,6 @@ async function loadUnPopulation() {
   return countries;
 }
 
-// IMF WEO: IMF code -> { year: GDP in US$ }
-async function loadImfGdp() {
-  const json = JSON.parse((await download(IMF_GDP_URL, 'imf-weo-ngdpd.json')).toString('utf8'));
-  const gdpByCode = {};
-  Object.entries(json.values.NGDPD).forEach(([code, valuesByYear]) => {
-    gdpByCode[code] = Object.fromEntries(
-      Object.entries(valuesByYear).map(([year, value]) => [year, value * IMF_GDP_MULTIPLIER])
-    );
-  });
-  return gdpByCode;
-}
-
 // UN National Accounts: UN M49 LocID -> { year: GDP in US$ }
 async function loadUnAmaGdp() {
   const workbook = XLSX.read(await download(UN_AMA_URL, 'un-ama-gdp-current-usd.xlsx'));
@@ -153,12 +140,23 @@ async function loadUnAmaGdp() {
         header.map((year, idx) => [year, row[idx]]).filter(([year]) => typeof year === 'number')
       );
     });
+
+  // Add up countries reported in parts, for the years every part has
+  Object.entries(UN_AMA_PARTS).forEach(([locId, partIds]) => {
+    const parts = partIds.map(partId => gdpByLocId[partId]).filter(Boolean);
+    if (parts.length !== partIds.length) return;
+    gdpByLocId[locId] = Object.fromEntries(
+      Object.keys(parts[0])
+        .filter(year => parts.every(part => Number.isFinite(Number(part[year])) && part[year] !== ''))
+        .map(year => [year, parts.reduce((sum, part) => sum + Number(part[year]), 0)])
+    );
+  });
   return gdpByLocId;
 }
 
 // ------------------------------------------------------------------
 
-const [unPopulation, imfGdp, unAmaGdp] = await Promise.all([loadUnPopulation(), loadImfGdp(), loadUnAmaGdp()]);
+const [unPopulation, unAmaGdp] = await Promise.all([loadUnPopulation(), loadUnAmaGdp()]);
 
 const ids = JSON.parse(await readFile(join(ROOT, 'ne-country-areas.json'), 'utf8')).map(([id]) => id);
 const displayNames = new Intl.DisplayNames(['en'], { type: 'region' });
@@ -182,12 +180,9 @@ for (const id of ids) {
   const population = un.populationByYear[POPULATION_YEAR];
   if (population) entry.population = { value: Math.round(population), year: POPULATION_YEAR, source: SOURCE_UN_WPP };
 
-  // Newest GDP year across both sources; the IMF wins ties
-  const imfValue = getNewest(imfGdp[IMF_CODE_ALIASES[id] ?? un.iso3], LATEST_GDP_YEAR);
-  const unValue  = getNewest(unAmaGdp[un.locId], LATEST_GDP_YEAR);
-  const gdp = imfValue && (!unValue || imfValue.year >= unValue.year)
-    ? { ...imfValue, source: SOURCE_IMF }
-    : unValue && { ...unValue, source: SOURCE_UN_AMA };
+  // Newest GDP year in the UN National Accounts
+  const unValue = getNewest(unAmaGdp[un.locId], LATEST_GDP_YEAR);
+  const gdp = unValue && { ...unValue, source: SOURCE_UN_AMA };
   if (!gdp) continue;
 
   entry.gdpUsd = { value: Math.round(gdp.value), year: gdp.year, source: gdp.source };
@@ -210,9 +205,8 @@ for (const id of ids) {
 
 const sources = {
   [SOURCE_UN_WPP]: 'UN DESA, World Population Prospects 2024, total population, medium variant (2025 values are projections)',
-  [SOURCE_IMF]   : 'IMF World Economic Outlook via the DataMapper API, NGDPD, GDP in current US$ (recent years may be IMF estimates)',
-  [SOURCE_UN_AMA]: 'UN Statistics Division, National Accounts Main Aggregates Database, GDP at current prices in US$',
-  method         : 'GDP: newest year from IMF (to 2025) or UN National Accounts (to 2024), IMF on ties; GDP per capita = that GDP / UN WPP population of the same year',
+  [SOURCE_UN_AMA]: 'UN Statistics Division, National Accounts Main Aggregates Database (UNdata), GDP at current prices in US$',
+  method         : 'GDP: newest year in the UN National Accounts; GDP per capita = that GDP / UN WPP population of the same year',
 };
 const countryLines = Object.entries(countries).map(([id, entry]) => `    ${toAsciiJson(id)}: ${toAsciiJson(entry)}`);
 await mkdir(dirname(OUT_FILE), { recursive: true });

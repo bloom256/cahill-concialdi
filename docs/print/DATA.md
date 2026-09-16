@@ -131,10 +131,17 @@ Regenerate with `node scripts/data/fetch-country-stats.mjs`; commit the refresh 
 
 - **Population:** UN World Population Prospects 2024 (UN DESA), total population, medium
   variant, 2025 (a projection from the 2023 base).
-- **GDP (current US$):** the newest year available from the IMF World Economic Outlook
-  (DataMapper API `NGDPD`, up to 2025, may include IMF estimates) or the UN National Accounts
-  Main Aggregates Database (up to 2024). The IMF wins ties. The UN fills IMF gaps such as
-  Cuba, North Korea, Eritrea and Syria. IMF code aliases: Kosovo `UVK`, Palestine `WBG`.
+- **GDP (current US$):** the newest year in the UN National Accounts Main Aggregates
+  Database (UNSD, UNdata), 2024 for every country. Tanzania is reported in two parts
+  (Mainland and Zanzibar) and summed. The UN publishes nothing for Taiwan.
+- **No IMF data** (decided 2026-09-16): the IMF requires permission for commercial reuse
+  of its data, and the map is meant to be sold. UNdata "may be copied freely, duplicated and
+  further distributed provided that UNdata is cited".
+- **Licenses for selling the print:** NASA imagery is public domain (credit NASA Earth
+  Observatory, imply no endorsement, no NASA logos); Natural Earth is public domain; UN WPP
+  is CC BY 3.0 IGO (credit and license name); UNdata needs a citation; Barlow is SIL OFL
+  (prints and embedded files may be sold, not the font itself); the projection code is MIT,
+  which covers copies of the code, not maps made with it. The info panel carries the credits.
 - **GDP per capita:** that GDP divided by the UN population of the same year, so both numbers
   use one population source.
 - **No World Bank data** is used (owner's preference, 2026-09-15).
