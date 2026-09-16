@@ -24,6 +24,22 @@ export default {
     disputedDash: ['1mm', '0.6mm'],
   },
 
+  // Island groups the country labels never reach (the US name sits on the mainland)
+  places: {
+    show       : true,
+    data       : 'data/places.json',
+    font       : 'Barlow Condensed',
+    weight     : 300,      // Light, like the names of countries under 1 million people
+    size       : '6pt',
+    lineHeight : 1.1,
+    color      : '#ffffff',
+    opacity    : 1,
+    haloColor  : '#02060d',
+    haloWidthEm: 0.28,
+    haloOpacity: 1,
+    offsetsMm  : [0, 1, 2, 3, 5, 8],
+  },
+
   countryStats: {
     show              : true,
     data              : 'data/build/country-stats.json',

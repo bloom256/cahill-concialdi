@@ -7,6 +7,7 @@
 | `ne-country-areas.json` | `[isoA2, MultiPolygon]` x 241, 0.01 deg, ~100k vertices, NE 50m-level detail | Coarse at 150 cm (Iceland has 452 vertices) |
 | `ne-boundaries.json` | `[isUndisputed, LineString]` x 362, ~20k vertices (22 dashed) | Coarse |
 | `ne-i.jpg`, `ne-hypso.jpg`, `nasa-*.jpg` | 3600x1800 equirectangular, 10 px/deg | Unusable for print (~48 dpi) |
+| `data/places.json` | Hand-kept label points `{ name, lat, lon }` for the `places` layer (print only) | Add a line to name any spot the country labels miss |
 
 Keep these for the web app. Print builds go to `data/build/`.
 

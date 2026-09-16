@@ -63,6 +63,13 @@ one of its polygons:
   No country is left unlabeled. In `geo-stats-nov` (5 pt minimum on the 190 cm print,
   stats on one line), only 5 countries need a leader line.
 
+**Implemented: `places`** (`print/layers/places.mjs`, page space). Names for spots no
+country label reaches, from the hand-kept list `data/places.json` (`{ name, lat, lon }`,
+optional `size`): island groups far from their country's main body, such as Hawaii, whose
+country label sits on the US mainland, or Kiribati's Line Islands. Each label sits on its
+point, or a few millimeters off (`offsetsMm`) when another label is already there. Set in
+the light weight so it reads as secondary to country names.
+
 **Implemented: `graticuleLabels`** (`print/layers/graticule-labels.mjs`, page space).
 Text on the grid itself:
 - Meridian labels (e.g. 30 degrees E) where each labeled meridian crosses the chosen latitudes.

@@ -15,6 +15,7 @@ import circles         from './circles.mjs';
 import land            from './land.mjs';
 import admin0          from './admin0.mjs';
 import countryStats    from './country-stats.mjs';
+import places          from './places.mjs';
 import graticuleLabels from './graticule-labels.mjs';
 
 export default [
@@ -26,5 +27,6 @@ export default [
   land,
   admin0,
   countryStats,
+  places,
   graticuleLabels,
 ];
