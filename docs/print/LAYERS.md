@@ -60,8 +60,8 @@ one of its polygons:
   2. **Callout**: otherwise the block takes the nearest free spot in rings of growing distance
      (2 to 75 mm) and 12 directions, with a dot and a leader line.
 
-  No country is left unlabeled. In `geo-stats-nov` (5 pt minimum on the 190 cm print,
-  stats on one line), only 5 countries need a leader line.
+  No country is left unlabeled. In `geo-stats-nov` (7 pt minimum on the 190 cm print,
+  stats on one line), 14 countries need a leader line.
 
 **Implemented: `places`** (`print/layers/places.mjs`, page space). Names for spots no
 country label reaches, from the hand-kept list `data/places.json` (`{ name, lat, lon }`,
