@@ -16,6 +16,7 @@ import land            from './land.mjs';
 import admin0          from './admin0.mjs';
 import countryStats    from './country-stats.mjs';
 import places          from './places.mjs';
+import infoPanel       from './info-panel.mjs';
 import graticuleLabels from './graticule-labels.mjs';
 
 export default [
@@ -28,5 +29,6 @@ export default [
   admin0,
   countryStats,
   places,
+  infoPanel,
   graticuleLabels,
 ];

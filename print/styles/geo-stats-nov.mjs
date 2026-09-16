@@ -46,6 +46,42 @@ export default {
     offsetsMm  : [0, 1, 2, 3, 5, 8],
   },
 
+  // Title, projection notes, distortion map, label key, lines and sources, set
+  // in the empty ocean of the southeast Pacific wing (words: print/info/content.mjs)
+  infoPanel: {
+    show         : true,
+    font         : 'Barlow Condensed',
+    x            : '139mm',
+    y            : '370mm',
+    columnWidth  : '118mm',
+    columnGap    : '14mm',
+    titleSize    : '38pt',
+    subtitleSize : '13pt',
+    headingSize  : '12pt',
+    bodySize     : '8.5pt',
+    titleWeight  : 600,
+    headingWeight: 600,
+    bodyWeight   : 400,
+    lineHeight   : 1.3,
+    titleGap     : '6mm',
+    headingGap   : '1mm',
+    haloWidthEm  : 0.28,
+    color        : '#ffffff',
+    haloColor    : '#02060d',
+    distortion   : {
+      radiusKm     : 700,
+      latitudes    : [-75, -50, -25, 0, 25, 50, 75],
+      lonStepDeg   : 30,
+      sparseFromLat: 70,
+      oceanColor  : '#0d2a4a',
+      landColor   : '#8c8f7a',
+      circleColor : '#ff9f1c',
+      circleStroke: '#02060d',
+      edgeColor   : '#ffffff',
+    },
+    labelKey     : { exampleWidth: '34mm', rowGap: '2.5mm' },
+  },
+
   countryStats: {
     show              : true,
     data              : 'data/build/country-stats.json',
