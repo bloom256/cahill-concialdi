@@ -1,6 +1,8 @@
 # Print Specs
 
-Target: **~150 x 90 cm, landscape.**
+Target: **190 x 99.6 cm, landscape** (map 1900 mm wide, 85 mm cropped off the bottom
+where the bat shape holds only empty ocean; untrimmed it would be 190 x 108 cm).
+The 150 x 90 cm figures below are the original plan, kept for the layout math.
 
 ## Size math
 
@@ -12,9 +14,12 @@ The projected map extent is 302 x 178 SVG units (aspect 1.697). The page
 | A: edge to edge | 1500 mm | 4.967 | 884 mm | 0 | 8 mm |
 | B: slim margin (default) | 1450 mm | 4.801 | 855 mm | 25 mm | 23 mm |
 | C: wide margin | 1400 mm | 4.636 | 825 mm | 50 mm | 37 mm |
+| D: current print | 1900 mm | 5.962 | 1081 mm, cropped to 996 mm | 0 | 0 (9 mm of ocean under Cape Agulhas) |
 
-`mmPerUnit = mapWidthMm / 302`. Frame elements mostly live in the empty areas around
-the bat shape, so layout B is the starting point. For canvas wraps add 40-50 mm of
+`mmPerUnit = mapWidthMm / view.width`, where the view is 302 units wide with the
+`original` frame and 318.7 units with `pole-centered`, which every print map uses
+(it widens the view so the North Pole sits in the middle). Frame elements mostly live
+in the empty areas around the bat shape. For canvas wraps add 40-50 mm of
 extended background per side; for paper add the shop's bleed (usually 3-5 mm).
 
 **Scale:** in layout B, 90 deg of equator = 100 units = 480 mm, so about 1:20.9M at the
@@ -28,6 +33,9 @@ sizes change; Antarctica is strongly enlarged). Print "scale varies", not a scal
 | 1 mm | 0.208 units |
 | 1 pt (0.3528 mm) | 0.0735 units |
 | 1 unit | 4.80 mm = 13.6 pt |
+
+On the current 190 cm print (layout D) 1 unit = 5.96 mm = 16.9 pt, 1 mm = 0.168 units,
+1 pt = 0.059 units.
 
 Always write style tokens in mm/pt; `ctx.mm()` / `ctx.pt()` convert them, so changing
 the print size later keeps physical line weights and text sizes intact.

@@ -15,7 +15,8 @@ reproducibly from this repository in the Cahill-Concialdi projection.
 
 | Topic | Decision | Decided |
 |---|---|---|
-| Print size | 190 x 108 cm, landscape (2 m of free wall; at 150 cm the smallest labels were too small to read). First plan was ~150 x 90 cm | 2026-09-15 |
+| Print size | 190 x 99.6 cm, landscape (2 m of free wall; at 150 cm the smallest labels were too small to read). First plan was ~150 x 90 cm; the full bat shape is 190 x 108 cm before the bottom crop | 2026-09-15 |
+| Bottom crop | 85 mm cut from the bottom of the page (`page.cropBottomMm`): below Cape Agulhas at 987 mm there is only empty ocean, so no land is lost and Antarctica (ending at 909 mm) is untouched | 2026-09-16 |
 | Projection | Cahill-Concialdi only. No Mercator, Robinson, Equal Earth (or similar) anywhere, including insets: they distort country shapes/areas too much for the owner | 2026-09-13 |
 | Reference look | seav's original vector map is the favorite, liked at first sight: every country filled with a color derived from its position (north = red, east = green), dark navy ocean, only country borders as linework. It is the baseline all variants are judged against (`STYLES.md`) | 2026-09-13 |
 | Style | Not final: the original is "not enough, not perfect" yet. Refine it through focused variants and also stress-test it against contrasting directions, compared side by side | 2026-09-13 |
