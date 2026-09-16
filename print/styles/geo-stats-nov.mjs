@@ -69,10 +69,10 @@ export default {
     maxAngleDeg        : 90,     // a thin country's label may lie along its own axis
     rotateMinElongation: 2.2,    // PCA long/short ratio; below this a label is never rotated
     singleLineAlongAxis: true,   // a rotated label becomes one line when that fits larger
-    // The largest compact countries get the full labeled block with exact
-    // figures: Russia, China, India, the US, Canada, Brazil, Australia and
-    // Kazakhstan (Argentina is large enough but too elongated)
-    fullLabel          : { minAreaMm2: 5000, maxElongation: 2.2, roundNumbers: false },
+    // Every country whose largest piece covers at least 3000 mm2 of the print
+    // gets the full labeled block with exact figures, provided it fits; the
+    // text stays at the usual size, never larger than 14 pt
+    fullLabel          : { minAreaMm2: 3000, roundNumbers: false },
     solver             : 'anneal',
     solverOptions      : { optimizeTheta: false, optimizeSize: false },  // positions only
     textColor         : 'fixed',

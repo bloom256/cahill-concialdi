@@ -539,18 +539,25 @@ export default {
       // used only when it fits at the minimum size or larger. With
       // `roundNumbers: false` its figures keep 3 significant digits, since
       // whole numbers make China and India both read "1B".
+      // The test is room, not area: the block must fit horizontally inside the
+      // country at `minRoomPt` (a measure of space, far above the 14 pt the
+      // text is actually set at). A fixed area cutoff left Algeria out at
+      // 4608 mm2 although the block fits there with room for 34 pt.
       if (config.fullLabel && statLines.length) {
+        const fullLines = [
+          { text: entry.name, weight: config.nameWeight, scale: 1 },
+          ...getStatTexts(entry, 'stacked', config.fullLabel.roundNumbers === false ? null : config.statsDecimals ?? null)
+            .map(text => ({ text, weight: config.statsWeight, scale: config.statsScale })),
+        ];
+        const horizontal = { ...config, maxAngleDeg: 0 };
+        const fullUnit = measureBlock(fullLines, config);
         const largest = polygons.reduce((best, polygon) => polygon.area > best.area ? polygon : best);
-        const isLarge = largest.area >= config.fullLabel.minAreaMm2;
-        const isCompact = largest.elongation < (config.fullLabel.maxElongation ?? config.rotateMinElongation ?? 2.2);
-        if (isLarge && isCompact) {
-          const fullLines = [
-            { text: entry.name, weight: config.nameWeight, scale: 1 },
-            ...getStatTexts(entry, 'stacked', config.fullLabel.roundNumbers === false ? null : config.statsDecimals ?? null)
-              .map(text => ({ text, weight: config.statsWeight, scale: config.statsScale })),
-          ];
-          const fullFit = findBestFit(polygons, measureBlock(fullLines, config), minNameSize, maxNameSize,
-            { ...config, maxAngleDeg: 0 });
+        const { minAreaMm2, minRoomPt } = config.fullLabel;
+        const roomSize = minRoomPt ? ctx.mm(minRoomPt) : 0;
+        const isLargeEnough = !minAreaMm2 || largest.area >= minAreaMm2;
+        const hasRoom = !minRoomPt || findBestFit(polygons, fullUnit, roomSize, roomSize, horizontal).size;
+        if (isLargeEnough && hasRoom) {
+          const fullFit = findBestFit(polygons, fullUnit, minNameSize, maxNameSize, horizontal);
           if (fullFit.size) {
             lines = fullLines;
             fit = fullFit;
