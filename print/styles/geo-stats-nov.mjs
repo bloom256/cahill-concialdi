@@ -49,6 +49,8 @@ export default {
     statsWeight       : 300,      // Light
     statsScale        : 0.72,     // stat line size relative to the name size
     statsLayout       : 'inline',  // population / GDP / GDP per capita on one line
+    statsDecimals     : 0,         // whole numbers only: 84M / $5T / $60K
+    nameSource        : 'iso3',    // three-letter codes instead of names
     minStatsPopulation: 1e6,      // smaller countries get only their name, in the stats weight
     lineHeight        : 1.1,      // line box height relative to its font size
     fill              : 0.95,     // block size relative to the space it fits in (margin)
