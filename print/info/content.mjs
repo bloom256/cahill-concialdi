@@ -58,8 +58,7 @@ export const COLUMNS = [
     { text:
       'Meridians and parallels every 30 degrees. The equator is solid; the ' +
       'tropics and the polar circles are dashed. White lines are borders, and ' +
-      'dashed borders are disputed or de facto lines. Crimea is shown within ' +
-      'Ukraine\'s 1991 borders.' },
+      'dashed borders are disputed or de facto lines.' },
     { gap: 5 },
     { heading: 'Sources' },
     { text: 'Imagery: NASA Earth Observatory, Blue Marble: Next Generation, November 2004.' },
