@@ -31,11 +31,14 @@ const DEFAULTS = {
   seed           : 20260916,
   rejectOverlap  : true,   // overlap is a constraint, not a price worth paying
   swapFraction   : 0.15,   // share of moves that exchange two neighbours' places
+  optimizeTheta  : true,   // false: every label keeps the angle it was given
+  optimizeSize   : true,   // false: every label keeps the size it was given
 
   weightSize     : 1.0,    // per label, on size relative to its maximum
   weightInside   : 12.0,   // per mm^2 of rectangle outside its country (swept)
   weightOverlap  : 8.0,    // per mm^2 of penetration between two labels
-  weightTilt     : 0.35,   // at 90 degrees, relative to a full-size label
+  weightTilt     : 6.0,    // tilt reads badly on this map, so it must earn its place
+  maxTiltDeg     : 12,     // and it may never become a diagonal ribbon
   weightAttach   : 0.8,    // per mm^2 of drift beyond the country's roam radius
 
   stepMm         : 6,      // initial position step; scaled by temperature
@@ -219,6 +222,7 @@ class Grid {
 export function solveLabels(labels, start, options = {}) {
 
   const settings = { ...DEFAULTS, ...options };
+  const maxTilt = settings.maxTiltDeg ?? 90;
   const random = makeRandom(settings.seed);
   const gaussian = makeGaussian(random);
 
@@ -317,9 +321,12 @@ export function solveLabels(labels, start, options = {}) {
       if (!neighbours.length) continue;
       const second = neighbours[Math.floor(random() * neighbours.length)];
 
-      // Each label keeps its own size and takes the other's position and angle
-      const poseFirst = { x: poses[second].x, y: poses[second].y, theta: poses[second].theta, size: poses[first].size };
-      const poseSecond = { x: poses[first].x, y: poses[first].y, theta: poses[first].theta, size: poses[second].size };
+      // Each label keeps its own size and takes the other's position; the
+      // angle travels with the place only when angles are being optimized
+      const thetaFirst = settings.optimizeTheta ? poses[second].theta : poses[first].theta;
+      const thetaSecond = settings.optimizeTheta ? poses[first].theta : poses[second].theta;
+      const poseFirst = { x: poses[second].x, y: poses[second].y, theta: thetaFirst, size: poses[first].size };
+      const poseSecond = { x: poses[first].x, y: poses[first].y, theta: thetaSecond, size: poses[second].size };
 
       const savedFirst = { pose: poses[first], box: boxes[first], aabb: bounds[first] };
       const savedSecond = { pose: poses[second], box: boxes[second], aabb: bounds[second] };
@@ -349,11 +356,11 @@ export function solveLabels(labels, start, options = {}) {
     const proposal = {
       x    : current.x + gaussian() * settings.stepMm * scale,
       y    : current.y + gaussian() * settings.stepMm * scale,
-      theta: current.theta + gaussian() * settings.stepDeg * scale,
-      size : current.size * Math.exp(gaussian() * settings.stepSize * scale),
+      theta: settings.optimizeTheta ? current.theta + gaussian() * settings.stepDeg * scale : current.theta,
+      size : settings.optimizeSize ? current.size * Math.exp(gaussian() * settings.stepSize * scale) : current.size,
     };
-    proposal.theta = Math.max(-90, Math.min(90, proposal.theta));
-    proposal.size = Math.max(label.minSize, Math.min(label.maxSize, proposal.size));
+    if (settings.optimizeTheta) proposal.theta = Math.max(-maxTilt, Math.min(maxTilt, proposal.theta));
+    if (settings.optimizeSize) proposal.size = Math.max(label.minSize, Math.min(label.maxSize, proposal.size));
 
     const before = energyAt(index, current);
     const after = energyAt(index, proposal);
