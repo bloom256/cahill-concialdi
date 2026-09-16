@@ -133,7 +133,10 @@ Regenerate with `node scripts/data/fetch-country-stats.mjs`; commit the refresh 
   variant, 2025 (a projection from the 2023 base).
 - **GDP (current US$):** the newest year in the UN National Accounts Main Aggregates
   Database (UNSD, UNdata), 2024 for every country. Tanzania is reported in two parts
-  (Mainland and Zanzibar) and summed. The UN publishes nothing for Taiwan.
+  (Mainland and Zanzibar) and summed. The UN publishes nothing for Taiwan, so its 2024 GDP
+  comes from DGBAS, Taiwan's statistics office ("Principal Figures" table, nominal GDP in
+  million US$), under the Open Government Data License, version 1.0, which allows commercial
+  use with attribution. The credit is on the info panel.
 - **No IMF data** (decided 2026-09-16): the IMF requires permission for commercial reuse
   of its data, and the map is meant to be sold. UNdata "may be copied freely, duplicated and
   further distributed provided that UNdata is cited".

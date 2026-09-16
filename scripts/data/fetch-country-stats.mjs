@@ -33,12 +33,21 @@ const UN_AMA_URL = 'https://unstats.un.org/unsd/amaapi/api/file/2';
 
 const POPULATION_YEAR     = 2025;
 const LATEST_GDP_YEAR     = 2025;
+const UN_AMA_YEAR         = 2024;   // newest year in the UN National Accounts; Taiwan uses the same
 const EARLIEST_GDP_YEAR   = 2015;   // older values are not used
 const UN_WPP_MULTIPLIER   = 1e3;    // PopTotal is in thousands
 const UN_AMA_GDP_INDICATOR = 'Gross Domestic Product (GDP)';
 
 const SOURCE_UN_WPP = 'UN WPP 2024';
 const SOURCE_UN_AMA = 'UN National Accounts';
+const SOURCE_DGBAS  = 'DGBAS Taiwan';
+
+// The UN publishes no national accounts for Taiwan. Its own statistics office
+// (DGBAS) publishes them under the Open Government Data License, version 1.0,
+// which allows commercial use with attribution. "Principal Figures" table,
+// nominal GDP in million US$.
+const DGBAS_URL = 'https://ws.dgbas.gov.tw/001/Upload/464/relfile/10320/2688/table_eng(059).xlsx';
+const DGBAS_GDP_MULTIPLIER = 1e6;
 
 // Countries the UN National Accounts report in parts, by UN M49 LocID:
 // Tanzania (834) as the Mainland (835) and Zanzibar (836)
@@ -154,9 +163,24 @@ async function loadUnAmaGdp() {
   return gdpByLocId;
 }
 
+// DGBAS (Taiwan): { year: GDP in US$ } from the "Principal Figures" table,
+// whose rows are years and whose "million US$" column follows "Nominal GDP"
+async function loadDgbasGdp() {
+  const workbook = XLSX.read(await download(DGBAS_URL, 'dgbas-principal-figures.xlsx'));
+  const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, blankrows: false });
+  const groupRow = rows.findIndex(row => row.includes('Nominal GDP'));
+  const gdpColumn = rows[groupRow].indexOf('Nominal GDP') + 1;
+  if (!/million US\$/.test(String(rows[groupRow + 2]?.[gdpColumn]))) {
+    throw new Error('DGBAS table layout changed: no "million US$" column after "Nominal GDP"');
+  }
+  return Object.fromEntries(rows
+    .filter(row => Number.isInteger(row[0]) && Number.isFinite(row[gdpColumn]))
+    .map(row => [row[0], row[gdpColumn] * DGBAS_GDP_MULTIPLIER]));
+}
+
 // ------------------------------------------------------------------
 
-const [unPopulation, unAmaGdp] = await Promise.all([loadUnPopulation(), loadUnAmaGdp()]);
+const [unPopulation, unAmaGdp, dgbasGdp] = await Promise.all([loadUnPopulation(), loadUnAmaGdp(), loadDgbasGdp()]);
 
 const ids = JSON.parse(await readFile(join(ROOT, 'ne-country-areas.json'), 'utf8')).map(([id]) => id);
 const displayNames = new Intl.DisplayNames(['en'], { type: 'region' });
@@ -180,9 +204,12 @@ for (const id of ids) {
   const population = un.populationByYear[POPULATION_YEAR];
   if (population) entry.population = { value: Math.round(population), year: POPULATION_YEAR, source: SOURCE_UN_WPP };
 
-  // Newest GDP year in the UN National Accounts
+  // Newest GDP year in the UN National Accounts; Taiwan from DGBAS, for the
+  // same year as the UN figures so every country shows one year
   const unValue = getNewest(unAmaGdp[un.locId], LATEST_GDP_YEAR);
-  const gdp = unValue && { ...unValue, source: SOURCE_UN_AMA };
+  const gdp = unValue
+    ? { ...unValue, source: SOURCE_UN_AMA }
+    : id === 'TW' && dgbasGdp[UN_AMA_YEAR] && { year: UN_AMA_YEAR, value: dgbasGdp[UN_AMA_YEAR], source: SOURCE_DGBAS };
   if (!gdp) continue;
 
   entry.gdpUsd = { value: Math.round(gdp.value), year: gdp.year, source: gdp.source };
@@ -206,7 +233,8 @@ for (const id of ids) {
 const sources = {
   [SOURCE_UN_WPP]: 'UN DESA, World Population Prospects 2024, total population, medium variant (2025 values are projections)',
   [SOURCE_UN_AMA]: 'UN Statistics Division, National Accounts Main Aggregates Database (UNdata), GDP at current prices in US$',
-  method         : 'GDP: newest year in the UN National Accounts; GDP per capita = that GDP / UN WPP population of the same year',
+  [SOURCE_DGBAS] : 'Directorate-General of Budget, Accounting and Statistics (DGBAS), Taiwan, Principal Figures, nominal GDP in US$; Open Government Data License, version 1.0',
+  method         : 'GDP: newest year in the UN National Accounts (Taiwan: DGBAS, same year); GDP per capita = that GDP / UN WPP population of the same year',
 };
 const countryLines = Object.entries(countries).map(([id, entry]) => `    ${toAsciiJson(id)}: ${toAsciiJson(entry)}`);
 await mkdir(dirname(OUT_FILE), { recursive: true });

@@ -64,6 +64,8 @@ export const COLUMNS = [
     { text: 'Imagery: NASA Earth Observatory, Blue Marble: Next Generation, November 2004.' },
     { text: 'Borders: Natural Earth, public domain.' },
     { text: 'Population: UN DESA, World Population Prospects 2024, 2025 (CC BY 3.0 IGO).' },
-    { text: 'GDP: UN Statistics Division, National Accounts Main Aggregates, 2024 (UNdata).' },
+    { text:
+      'GDP: UN Statistics Division, National Accounts Main Aggregates, 2024 (UNdata); ' +
+      'Taiwan: DGBAS, Taiwan (Open Government Data License, version 1.0).' },
   ],
 ];
