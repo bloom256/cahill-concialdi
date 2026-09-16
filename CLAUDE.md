@@ -161,9 +161,10 @@ always draw identical shapes.
 
 - `ne-country-areas.json`: array of `[isoA2, MultiPolygon]`, 241 entries, coordinates
   `[lon, lat]` rounded to 0.01 deg, Natural Earth 50m-level detail. Special ids exist
-  (e.g. `CY-TR`, `SO-SD`).
-- `ne-boundaries.json`: array of `[isUndisputed, LineString]`, 363 entries
-  (`false` -> drawn dashed as disputed).
+  (e.g. `CY-TR`, `SO-SD`). Crimea belongs to `UA` here, not to `RU` as in Natural
+  Earth (local edit, see `docs/print/DATA.md`).
+- `ne-boundaries.json`: array of `[isUndisputed, LineString]`, 362 entries
+  (`false` -> drawn dashed as disputed; 22 of them).
 - `*.jpg` rasters: 3600x1800 equirectangular, 10 px/deg (`SOURCE_RASTER_PPD`).
   Fine on screen, far too coarse for a large print (~48 dpi at 150 cm).
 

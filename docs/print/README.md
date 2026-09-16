@@ -23,6 +23,7 @@ reproducibly from this repository in the Cahill-Concialdi projection.
 | Content | Admin-1 subdivisions, labels, rivers and lakes, frame and cartouche. Must stay extensible: more layers may be added later | 2026-09-13 |
 | Docs | `CLAUDE.md` at repo root, plan in `docs/print/` | 2026-09-13 |
 | Print grid | Thin line weights (graticule 0.2 mm, tropic and polar circles 0.35 mm) and grid labels on every map except `seav-original`, via `preset-print-grid` | 2026-09-14 |
+| Crimea | Drawn as part of Ukraine: Russia and Ukraine get their 1991 borders, and the dashed line at Perekop is gone. Natural Earth's default (Crimea in Russia) is a de facto view; the UN population and IMF GDP figures count Crimea in Ukraine anyway | 2026-09-16 |
 | Country stats layout | The three numbers share one line ("38.2M / $2.17T / $56.8K") and labels are 5-14 pt. The stacked four-line block was too tall, so too many names ended up off their country on leader lines | 2026-09-16 |
 | Blue Marble month | June 2004, the current favorite ("my fav for now"); November was chosen first from all 12 months in round `2026-09-14-r1`. `geo-blue-marble` uses June | 2026-09-14 |
 | Orientation | Every variant after `seav-original` uses the upright, North-Pole-centered view of `seav-upright` (no -5.4 deg tilt); new variants extend `seav-upright` or a descendant of it | 2026-09-13 |
@@ -38,7 +39,9 @@ reproducibly from this repository in the Cahill-Concialdi projection.
 - [ ] Label language and diacritics: English names with native diacritics (recommended, e.g. "Cote d'Ivoire" spelled properly) vs. local-language names vs. plain ASCII
 - [ ] Admin-1 coverage: every country, or only large countries (US, CA, BR, RU, CN, IN, AU, ...) to avoid clutter
 - [ ] Antarctica treatment: full, visually subdued, or partially cropped (it is heavily inflated in this projection)
-- [ ] Disputed borders: Natural Earth default de facto view vs. a point-of-view edition
+- [ ] Disputed borders: Natural Earth's de facto view is kept, except Crimea (decided
+  2026-09-16, see the decision table). Open: whether to label Siachen Glacier at all, and
+  how to mark areas without UN/IMF data (Northern Cyprus, Somaliland, Western Sahara)
 - [ ] Vector-only vs. hybrid raster styles for the final print (raster needs multi-GB source downloads)
 - [ ] Personal touches (see "Make it yours" in `STYLES.md`)
 
