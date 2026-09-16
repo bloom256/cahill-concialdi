@@ -37,6 +37,9 @@ const GRID_STEPS              = 12;    // candidate grid divisions per bounding 
 const SIZE_SEARCH_STEPS       = 10;    // binary search iterations for the font size
 const GRID_PENALTY            = 1.08;  // a grid candidate must beat the pole by this much
 const DARK_TEXT_MIN_LUMINANCE = 0.3;   // relative luminance of the fill
+const AXIS_SWEEP_DEG          = 30;    // rotated labels are searched this far either side of the PCA axis
+const AXIS_STEP_DEG           = 2.5;   // in steps this fine, then refined
+const ALONG_AXIS_MIN_DEG      = 20;    // a block tilted less than this is not "lying along" its country
 
 // Callouts: directions to try around the anchor (degrees, 0 = right,
 // 90 = up), sideways first because the text is horizontal
@@ -84,7 +87,11 @@ function getStatTexts(entry, layout, decimals = null, separator = ' / ') {
   }
   // 'three-line': the middle ground - population on its own line, the two GDP
   // figures sharing the next one, under the country code
-  if (layout === 'three-line') {
+  // 'three-line': code, then population, then both GDP figures
+  // 'two-line': the layer pulls population up beside the code, leaving
+  // "FRA/68M" over "$3T/$51K" - two lines of similar width, so the block is
+  // about as rectangular as this data gets
+  if (layout === 'three-line' || layout === 'two-line') {
     const gdps = [gdp, gdpPerCapita].filter(Boolean).join(separator);
     return [population, gdps].filter(Boolean);
   }
@@ -195,7 +202,18 @@ function getPrincipalAxisDeg(ring) {
     varY  += dy * dy;
     covXY += dx * dy;
   }
-  return 0.5 * Math.atan2(2 * covXY, varX - varY) * 180 / Math.PI;
+  // The two eigenvalues of the covariance give the shape's spread along its
+  // own axes; their ratio says how long and thin it is. Portugal comes out
+  // around 3, France around 1.2.
+  const mean = (varX + varY) / 2;
+  const spread = Math.sqrt((varX - varY) * (varX - varY) / 4 + covXY * covXY);
+  const major = mean + spread;
+  const minor = Math.max(1e-9, mean - spread);
+
+  return {
+    axisDeg   : 0.5 * Math.atan2(2 * covXY, varX - varY) * 180 / Math.PI,
+    elongation: Math.sqrt(major / minor),
+  };
 }
 
 // Returns the area enclosed by a ring (shoelace formula)
@@ -234,7 +252,7 @@ function preparePolygon(ctx, polygon) {
     gridCenters,
     diagonal   : Math.hypot(maxX - minX, maxY - minY),
     area       : getRingArea(rings[0]),
-    axisDeg    : getPrincipalAxisDeg(rings[0]),
+    ...getPrincipalAxisDeg(rings[0]),   // axisDeg and elongation
   };
 }
 
@@ -274,8 +292,9 @@ function getLargestFit(center, unitBlock, rings, minSize, maxSize) {
 // and for being rotated, so centered horizontal labels win near-ties.
 function findBestFit(polygons, unitBlock, minSize, maxSize, config) {
 
-  const maxAngleDeg  = config.maxAngleDeg ?? null;   // null: use the anglesDeg list
-  const angleStepDeg = config.angleStepDeg ?? 15;
+  const maxAngleDeg   = config.maxAngleDeg ?? null;   // null: use the anglesDeg list
+  const angleStepDeg  = config.angleStepDeg ?? 15;
+  const minElongation = config.rotateMinElongation ?? 2.2;
   const refineRounds = config.angleRefineRounds ?? 5;
 
   // Tilt is penalized in proportion to it, so a few degrees cost almost
@@ -314,17 +333,21 @@ function findBestFit(polygons, unitBlock, minSize, maxSize, config) {
     tryAngle(polygon, 0);
     if (!maxAngleDeg) return;
 
-    const angles = new Set();
-    if (Math.abs(polygon.axisDeg) <= maxAngleDeg) angles.add(polygon.axisDeg);
-    for (let angleDeg = angleStepDeg; angleDeg <= maxAngleDeg; angleDeg += angleStepDeg) {
-      angles.add(angleDeg);
-      angles.add(-angleDeg);
+    // Only a long, thin country earns a rotated label. A compact one reads
+    // better horizontal whatever the fit says, so it is never even tried.
+    // For the thin ones the search is dense around their own axis: a label
+    // can fit at -68 degrees and at no angle 15 degrees either side of it
+    // (Portugal), so a few samples miss it, and the refinement below only
+    // starts once something has fitted.
+    if (polygon.elongation < minElongation) return;
+    for (let offset = -AXIS_SWEEP_DEG; offset <= AXIS_SWEEP_DEG; offset += AXIS_STEP_DEG) {
+      const angleDeg = polygon.axisDeg + offset;
+      if (Math.abs(angleDeg) <= maxAngleDeg) tryAngle(polygon, angleDeg);
     }
-    angles.forEach(angleDeg => tryAngle(polygon, angleDeg));
   });
 
   // Refine: hill-climb around the winning angle, halving the step each round
-  for (let step = angleStepDeg / 2, round = 0; best.angleDeg && round < refineRounds; step /= 2, round++) {
+  for (let step = AXIS_STEP_DEG / 2, round = 0; best.angleDeg && round < refineRounds; step /= 2, round++) {
     const polygon = best.polygon;
     const angleDeg = best.angleDeg;
     if (Math.abs(angleDeg + step) <= maxAngleDeg) tryAngle(polygon, angleDeg + step);
@@ -409,6 +432,7 @@ export default {
     const hiddenNames = [];
     const skippedNames = [];
     const calloutNames = [];
+    const singleLineNames = [];
     const counts = { full: 0, nameOnly: 0, rotated: 0, overlays: 0, shrunk: 0, callouts: 0, forced: 0, belowStatsPopulation: 0 };
 
     // Records a text block (lines stacked around the center) and its box.
@@ -478,7 +502,10 @@ export default {
       // Layouts that pull numbers up onto the name's line: all of them for
       // 'single-line' (DEU/84M/$5T/$60K), the population only for 'gdp-middle',
       // which leaves GDP as the middle line of three
-      if (statTexts.length && (config.statsLayout === 'single-line' || config.statsLayout === 'gdp-middle')) {
+      const pullsUp = config.statsLayout === 'single-line' ||
+                      config.statsLayout === 'gdp-middle' ||
+                      config.statsLayout === 'two-line';
+      if (statTexts.length && pullsUp) {
         const pulled = config.statsLayout === 'single-line' ? statTexts : statTexts.slice(0, 1);
         nameText = [nameText, ...pulled].join(separator);
         statTexts = statTexts.slice(pulled.length);
@@ -499,10 +526,32 @@ export default {
 
       // Multi-line blocks stay horizontal unless the style allows rotating them
       const fullBlockConfig = config.rotateFullBlock ? config : { ...config, anglesDeg: [0] };
-      const lines = [nameLine, ...statLines];
-      const fit = statLines.length
+      let lines = [nameLine, ...statLines];
+      let fit = statLines.length
         ? findBestFit(polygons, measureBlock(lines, config), minNameSize, maxNameSize, fullBlockConfig)
         : findBestFit(polygons, measureBlock(lines, config), minNameOnlySize, maxNameSize, config);
+
+      // A long, thin country like Portugal reads best as one line lying along
+      // its axis: PRT/10M/$346B/$33K. The trigger is the two-line block itself
+      // ending up rotated: that happens only where the country is too thin for
+      // it to sit upright. Countries whose block stays horizontal keep two
+      // lines, even when a single line would fit bigger (Sweden, Morocco:
+      // there it becomes a huge diagonal ribbon).
+      if (config.singleLineAlongAxis && statLines.length && fit.size &&
+          Math.abs(fit.angleDeg) >= ALONG_AXIS_MIN_DEG) {
+        const singleLines = [{
+          text  : [nameLine.text, ...statLines.map(line => line.text)].join(separator),
+          weight: config.nameWeight,
+          scale : 1,
+        }];
+        const singleFit = findBestFit(polygons, measureBlock(singleLines, config), minNameSize, maxNameSize, fullBlockConfig);
+        if (singleFit.size && Math.abs(singleFit.angleDeg) >= ALONG_AXIS_MIN_DEG) {
+          lines = singleLines;
+          fit = singleFit;
+          singleLineNames.push(entry.name);
+        }
+      }
+
       if (fit.size) {
         counts[statLines.length ? 'full' : 'nameOnly']++;
         if (fit.angleDeg) counts.rotated++;
@@ -627,6 +676,9 @@ export default {
       `(${counts.forced} without a free spot), ${hiddenNames.length} hidden` +
       (hiddenNames.length ? ` (${hiddenNames.join(', ')})` : '')
     );
+    if (singleLineNames.length) {
+      ctx.notes.push(`countryStats: single line along the country for ${singleLineNames.join(', ')}`);
+    }
     if (calloutNames.length) {
       ctx.notes.push(`countryStats: leader lines for ${calloutNames.join(', ')}`);
     }
@@ -669,6 +721,13 @@ export default {
           sdf = fields.get(placement.polygon);
         }
         const anchor = placement.anchor ?? [placement.x, placement.y];
+
+        // How far a label may drift before it starts paying. A big country
+        // holds its label near the middle, where it belongs; a small one has
+        // to be free, because only the solver knows where there is room.
+        const inradius = sdf ? Math.max(1, sampleSdf(sdf, anchor[0], anchor[1])) : 1;
+        const roamMm = Math.max(2.5, Math.min(25, 25 / inradius));
+
         return {
           id        : placement.id,
           unitWidth,
@@ -678,7 +737,7 @@ export default {
           margin,
           sdf,
           anchor,
-          roamMm    : Math.max(1, sdf ? sampleSdf(sdf, anchor[0], anchor[1]) : 1),
+          roamMm,
           weight    : 1,
         };
       });
