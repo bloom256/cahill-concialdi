@@ -169,9 +169,16 @@ export function buildSdf(rings, { cellMm = 0.4, padMm = 30 } = {}) {
 export function sampleSdf(sdf, x, y) {
 
   const { minX, minY, cellMm, cols, rows, field } = sdf;
-  const gridX = (x - minX) / cellMm - 0.5;
-  const gridY = (y - minY) / cellMm - 0.5;
-  if (gridX < 0 || gridY < 0 || gridX > cols - 1 || gridY > rows - 1) return -FAR;
+
+  // Grid coordinates, clamped into the field. Beyond the padded box the field
+  // holds no data, so the reading is the nearest edge value minus the distance
+  // out to the point: "outside, and this much further out" - a slope to follow
+  // rather than a cliff that swamps every other term. Inside, `awayMm` is 0.
+  const rawX = (x - minX) / cellMm - 0.5;
+  const rawY = (y - minY) / cellMm - 0.5;
+  const gridX = Math.min(Math.max(rawX, 0), cols - 1);
+  const gridY = Math.min(Math.max(rawY, 0), rows - 1);
+  const awayMm = Math.hypot(rawX - gridX, rawY - gridY) * cellMm;
 
   const col = Math.floor(gridX);
   const row = Math.floor(gridY);
@@ -182,5 +189,5 @@ export function sampleSdf(sdf, x, y) {
 
   const top = field[row * cols + col] * (1 - fx) + field[row * cols + col2] * fx;
   const bottom = field[row2 * cols + col] * (1 - fx) + field[row2 * cols + col2] * fx;
-  return top * (1 - fy) + bottom * fy;
+  return top * (1 - fy) + bottom * fy - awayMm;
 }

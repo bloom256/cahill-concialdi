@@ -27,6 +27,12 @@ check('on the edge'     , sampleSdf(squareSdf, 0, 50)   ,   0, 0.3);
 check('5 mm outside'    , sampleSdf(squareSdf, -5, 50)  ,  -5, 0.3);
 check('outside a corner', sampleSdf(squareSdf, -3, -4)  ,  -5, 0.4);
 
+// Far beyond the padded box the field has no data: it must still return a
+// finite, monotone reading (and must not recurse)
+check('200 mm off a side'  , sampleSdf(squareSdf, -200, 50)  , -200  , 1.0);
+check('far off a corner'   , sampleSdf(squareSdf, -100, -100), -141.4, 1.5);
+check('far past the far side', sampleSdf(squareSdf, 400, 50) , -300  , 1.0);
+
 // --- the same square with a 20 mm hole in the middle
 console.log('\nsquare with a hole');
 const holed = [square[0], [[40, 40], [60, 40], [60, 60], [40, 60]]];
