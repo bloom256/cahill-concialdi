@@ -78,11 +78,16 @@ graticule 0.15 units = 0.72 mm (too heavy), tropic/polar circles 0.3 units = 1.4
 - Large-format pigment inkjet ("giclee") is the usual choice for a single print.
 - Paper: matte fine-art (e.g. Hahnemuehle Photo Rag) for muted/antique styles;
   satin or photo paper for dark and imagery styles; canvas for a stretched wrap.
-- Roll widths: 914 mm (36"), 1067 mm (42"), 1118 mm (44"), 1372 mm (54"), 1524 mm (60").
-  The 900 mm short side barely fits a 36" roll; 42"/44" is safer (trimmed).
-- 150 x 90 cm is not a stock frame size in most places: custom frame, poster hanger
-  rails, or canvas stretcher. Check local stock sizes (e.g. 100 x 140, 100 x 150)
-  before freezing the layout; extra height can go to margins and cartouche.
+- Roll widths: 610 mm (24"), 914 mm (36"), 1067 mm (42"), 1118 mm (44"), 1372 mm (54"),
+  1524 mm (60"). The print's 951 mm short side goes **across** the roll and its 1900 mm
+  length runs along it, so a 42" or 44" roll fits with room to trim; a 36" roll (914 mm)
+  is too narrow.
+- No stock sheet size comes close: A0 is 841 x 1189 mm, B0 1000 x 1414 mm, and the usual
+  poster sizes are 50 x 70, 70 x 100 and 100 x 140 cm. Large-format shops cut to any size
+  off the roll, so 190 x 95.1 cm is ordered as a custom trim size.
+- 190 x 95.1 cm is not a stock frame size either: custom frame, poster hanger rails
+  (cheapest at this width), canvas stretcher, or mounting on dibond/acrylic (usually
+  available up to about 150 x 200 cm).
 
 ## Handoff formats
 
