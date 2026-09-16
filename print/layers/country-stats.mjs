@@ -433,6 +433,7 @@ export default {
     const skippedNames = [];
     const calloutNames = [];
     const singleLineNames = [];
+    const fullLabelNames = [];
     const counts = { full: 0, nameOnly: 0, rotated: 0, overlays: 0, shrunk: 0, callouts: 0, forced: 0, belowStatsPopulation: 0 };
 
     // Records a text block (lines stacked around the center) and its box.
@@ -530,6 +531,33 @@ export default {
       let fit = statLines.length
         ? findBestFit(polygons, measureBlock(lines, config), minNameSize, maxNameSize, fullBlockConfig)
         : findBestFit(polygons, measureBlock(lines, config), minNameOnlySize, maxNameSize, config);
+
+      // A very large, compact country (Russia, China, India, the United States)
+      // has room for the readable labeled form with its full name:
+      //   Russia / Pop 144M / GDP $2.17T / GDP/cap $14.9K
+      // Selected by area on the page and PCA elongation, set horizontal, and
+      // used only when it fits at the minimum size or larger. With
+      // `roundNumbers: false` its figures keep 3 significant digits, since
+      // whole numbers make China and India both read "1B".
+      if (config.fullLabel && statLines.length) {
+        const largest = polygons.reduce((best, polygon) => polygon.area > best.area ? polygon : best);
+        const isLarge = largest.area >= config.fullLabel.minAreaMm2;
+        const isCompact = largest.elongation < (config.fullLabel.maxElongation ?? config.rotateMinElongation ?? 2.2);
+        if (isLarge && isCompact) {
+          const fullLines = [
+            { text: entry.name, weight: config.nameWeight, scale: 1 },
+            ...getStatTexts(entry, 'stacked', config.fullLabel.roundNumbers === false ? null : config.statsDecimals ?? null)
+              .map(text => ({ text, weight: config.statsWeight, scale: config.statsScale })),
+          ];
+          const fullFit = findBestFit(polygons, measureBlock(fullLines, config), minNameSize, maxNameSize,
+            { ...config, maxAngleDeg: 0 });
+          if (fullFit.size) {
+            lines = fullLines;
+            fit = fullFit;
+            fullLabelNames.push(entry.name);
+          }
+        }
+      }
 
       // A long, thin country like Portugal reads best as one line lying along
       // its axis: PRT/10M/$346B/$33K. The trigger is the two-line block itself
@@ -676,6 +704,9 @@ export default {
       `(${counts.forced} without a free spot), ${hiddenNames.length} hidden` +
       (hiddenNames.length ? ` (${hiddenNames.join(', ')})` : '')
     );
+    if (fullLabelNames.length) {
+      ctx.notes.push(`countryStats: full labeled block for ${fullLabelNames.join(', ')}`);
+    }
     if (singleLineNames.length) {
       ctx.notes.push(`countryStats: single line along the country for ${singleLineNames.join(', ')}`);
     }
