@@ -174,6 +174,11 @@ for (const id of ids) {
   const un = unPopulation.get(id);
   if (!un) continue;
 
+  // The UN's ISO3 code, so labels can be set as three-letter codes instead of
+  // names. Entries missing from the UN data (Northern Cyprus, Somaliland,
+  // Siachen Glacier) have none and keep their name.
+  if (un.iso3) entry.iso3 = un.iso3;
+
   const population = un.populationByYear[POPULATION_YEAR];
   if (population) entry.population = { value: Math.round(population), year: POPULATION_YEAR, source: SOURCE_UN_WPP };
 
