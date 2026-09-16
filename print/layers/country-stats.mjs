@@ -27,6 +27,8 @@ import { project } from '../../concialdi.mjs';
 import { measureText, getVerticalMetrics } from '../fonts.mjs';
 import { attrs, escapeXml, formatNumber } from '../svg.mjs';
 import { COLOR_MODES } from './land.mjs';
+import { buildSdf, sampleSdf } from '../labels/sdf.mjs';
+import { solveLabels } from '../labels/solver.mjs';
 
 // ------------------------------------------------------------------
 
@@ -49,11 +51,13 @@ const MAGNITUDES = [[1e12, 'T'], [1e9, 'B'], [1e6, 'M'], [1e3, 'K']];
 
 // ------------------------------------------------------------------
 
-// Formats a number with 3 significant digits and a magnitude suffix: 38.2M
-function formatCompact(value, prefix = '') {
+// Formats a number with a magnitude suffix: 38.2M with 3 significant digits
+// (the default), or 38M with `decimals: 0`. The magnitude is always chosen so
+// the scaled value is at least 1, so rounding never produces "$0B".
+function formatCompact(value, prefix = '', decimals = null) {
   const [divisor, suffix] = MAGNITUDES.find(([magnitude]) => value >= magnitude) ?? [1, ''];
   const scaled = value / divisor;
-  const numDecimals = scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2;
+  const numDecimals = decimals ?? (scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2);
   return prefix + String(Number(scaled.toFixed(numDecimals))) + suffix;
 }
 
@@ -62,13 +66,27 @@ function formatCompact(value, prefix = '') {
 // 'inline': all three on one line, "38.2M / $2.17T / $56.8K". The line is much
 // shorter than three stacked ones, so the block is two lines instead of four
 // and fits inside far more countries. The '$' tells the numbers apart.
-function getStatTexts(entry, layout) {
-  const population      = entry.population      && formatCompact(entry.population.value);
-  const gdp             = entry.gdpUsd          && formatCompact(entry.gdpUsd.value, '$');
-  const gdpPerCapita    = entry.gdpPerCapitaUsd && formatCompact(entry.gdpPerCapitaUsd.value, '$');
+function getStatTexts(entry, layout, decimals = null, separator = ' / ') {
+  const population      = entry.population      && formatCompact(entry.population.value, '', decimals);
+  const gdp             = entry.gdpUsd          && formatCompact(entry.gdpUsd.value, '$', decimals);
+  const gdpPerCapita    = entry.gdpPerCapitaUsd && formatCompact(entry.gdpPerCapitaUsd.value, '$', decimals);
   if (layout === 'inline') {
     const parts = [population, gdp, gdpPerCapita].filter(Boolean);
-    return parts.length ? [parts.join(' / ')] : [];
+    return parts.length ? [parts.join(separator)] : [];
+  }
+  // 'stacked-plain': one number per line and no words, which makes the block
+  // about as tall as it is wide - squarest of the three, but the reader has to
+  // know the order (population, GDP, GDP per capita)
+  // 'single-line' and 'gdp-middle' also start from the three separate numbers;
+  // the layer pulls some of them up onto the name's line
+  if (layout === 'stacked-plain' || layout === 'single-line' || layout === 'gdp-middle') {
+    return [population, gdp, gdpPerCapita].filter(Boolean);
+  }
+  // 'three-line': the middle ground - population on its own line, the two GDP
+  // figures sharing the next one, under the country code
+  if (layout === 'three-line') {
+    const gdps = [gdp, gdpPerCapita].filter(Boolean).join(separator);
+    return [population, gdps].filter(Boolean);
   }
   return [
     population   && `Pop ${population}`,
@@ -157,6 +175,29 @@ function isRectInPolygon({ minX, minY, maxX, maxY }, rings) {
   return true;
 }
 
+// Angle in degrees of a ring's long axis, from the covariance of its points
+// (principal component). This is the natural direction for a label inside an
+// elongated country, and the first angle the fit search tries.
+function getPrincipalAxisDeg(ring) {
+  let sumX = 0;
+  let sumY = 0;
+  for (const [x, y] of ring) { sumX += x; sumY += y; }
+  const meanX = sumX / ring.length;
+  const meanY = sumY / ring.length;
+
+  let varX = 0;
+  let varY = 0;
+  let covXY = 0;
+  for (const [x, y] of ring) {
+    const dx = x - meanX;
+    const dy = y - meanY;
+    varX  += dx * dx;
+    varY  += dy * dy;
+    covXY += dx * dy;
+  }
+  return 0.5 * Math.atan2(2 * covXY, varX - varY) * 180 / Math.PI;
+}
+
 // Returns the area enclosed by a ring (shoelace formula)
 function getRingArea(ring) {
   let doubleArea = 0;
@@ -193,6 +234,7 @@ function preparePolygon(ctx, polygon) {
     gridCenters,
     diagonal   : Math.hypot(maxX - minX, maxY - minY),
     area       : getRingArea(rings[0]),
+    axisDeg    : getPrincipalAxisDeg(rings[0]),
   };
 }
 
@@ -232,29 +274,62 @@ function getLargestFit(center, unitBlock, rings, minSize, maxSize) {
 // and for being rotated, so centered horizontal labels win near-ties.
 function findBestFit(polygons, unitBlock, minSize, maxSize, config) {
 
-  let best = { size: 0, score: 0, center: null, angleDeg: 0 };
+  const maxAngleDeg  = config.maxAngleDeg ?? null;   // null: use the anglesDeg list
+  const angleStepDeg = config.angleStepDeg ?? 15;
+  const refineRounds = config.angleRefineRounds ?? 5;
 
-  config.anglesDeg.forEach(angleDeg => {
-    const anglePenalty = angleDeg === 0 ? 1 : config.rotationPenalty;
+  // Tilt is penalized in proportion to it, so a few degrees cost almost
+  // nothing while a sideways label must be clearly larger to win
+  const penaltyFor = angleDeg =>
+    1 + (config.rotationPenalty - 1) * Math.min(1, Math.abs(angleDeg) / 90);
+
+  let best = { size: 0, score: 0, center: null, angleDeg: 0, polygon: null };
+
+  const tryAngle = (polygon, angleDeg) => {
+    const anglePenalty = penaltyFor(angleDeg);
     const angle = angleDeg * Math.PI / 180;
 
-    polygons.forEach(polygon => {
+    // Work in a frame rotated by -angle, where the rotated block is axis-aligned
+    const rings = angle ? polygon.rings.map(ring => ring.map(point => rotatePoint(point, -angle))) : polygon.rings;
+    const candidates = [polygon.pole, ...polygon.gridCenters];
 
-      // Quick reject: the block's width must fit within the polygon's diagonal
-      if (polygon.diagonal < unitBlock.width * minSize) return;
-
-      // Work in a frame rotated by -angle, where the rotated block is axis-aligned
-      const rings = angle ? polygon.rings.map(ring => ring.map(point => rotatePoint(point, -angle))) : polygon.rings;
-      const candidates = [polygon.pole, ...polygon.gridCenters];
-
-      candidates.forEach((center, idx) => {
-        const penalty = anglePenalty * (idx === 0 ? 1 : GRID_PENALTY);
-        const rotatedCenter = angle ? rotatePoint(center, -angle) : center;
-        const size = getLargestFit(rotatedCenter, unitBlock, rings, Math.max(minSize, best.score * penalty), maxSize);
-        if (size && size / penalty > best.score) best = { size, score: size / penalty, center, angleDeg };
-      });
+    candidates.forEach((center, idx) => {
+      const penalty = anglePenalty * (idx === 0 ? 1 : GRID_PENALTY);
+      const rotatedCenter = angle ? rotatePoint(center, -angle) : center;
+      const size = getLargestFit(rotatedCenter, unitBlock, rings, Math.max(minSize, best.score * penalty), maxSize);
+      if (size && size / penalty > best.score) best = { size, score: size / penalty, center, angleDeg, polygon };
     });
+  };
+
+  // Quick reject: the block's width must fit within the polygon's diagonal
+  const fittable = polygons.filter(polygon => polygon.diagonal >= unitBlock.width * minSize);
+
+  if (maxAngleDeg === null) {
+    config.anglesDeg.forEach(angleDeg => fittable.forEach(polygon => tryAngle(polygon, angleDeg)));
+    return best;
+  }
+
+  // Horizontal first, then the polygon's own long axis, then a coarse sweep
+  fittable.forEach(polygon => {
+    tryAngle(polygon, 0);
+    if (!maxAngleDeg) return;
+
+    const angles = new Set();
+    if (Math.abs(polygon.axisDeg) <= maxAngleDeg) angles.add(polygon.axisDeg);
+    for (let angleDeg = angleStepDeg; angleDeg <= maxAngleDeg; angleDeg += angleStepDeg) {
+      angles.add(angleDeg);
+      angles.add(-angleDeg);
+    }
+    angles.forEach(angleDeg => tryAngle(polygon, angleDeg));
   });
+
+  // Refine: hill-climb around the winning angle, halving the step each round
+  for (let step = angleStepDeg / 2, round = 0; best.angleDeg && round < refineRounds; step /= 2, round++) {
+    const polygon = best.polygon;
+    const angleDeg = best.angleDeg;
+    if (Math.abs(angleDeg + step) <= maxAngleDeg) tryAngle(polygon, angleDeg + step);
+    if (Math.abs(angleDeg - step) <= maxAngleDeg) tryAngle(polygon, angleDeg - step);
+  }
 
   return best;
 }
@@ -326,24 +401,42 @@ export default {
     ctx.useFont(config.font, config.nameWeight);
     ctx.useFont(config.font, config.statsWeight);
 
-    const texts = [];
+    // Placements are collected rather than drawn as they are decided, so the
+    // whole arrangement exists as data before anything is emitted
+    const placements = [];
     const leaders = [];
+    const leaderRequests = [];
     const hiddenNames = [];
     const skippedNames = [];
     const calloutNames = [];
     const counts = { full: 0, nameOnly: 0, rotated: 0, overlays: 0, shrunk: 0, callouts: 0, forced: 0, belowStatsPopulation: 0 };
 
-    // Adds a text block (lines stacked around the center) and records its box
-    const addBlock = (lines, nameSize, centerX, centerY, angleDeg, color) => {
+    // Records a text block (lines stacked around the center) and its box.
+    // `meta` carries the country the block belongs to - the polygon it was
+    // placed in and that polygon's interior point - which the joint solver
+    // needs for its containment and attachment terms.
+    const addBlock = (lines, nameSize, centerX, centerY, angleDeg, color, meta = {}) => {
 
-      let lineTop = centerY - lines.reduce((sum, line) => sum + line.scale * nameSize * config.lineHeight, 0) / 2;
+      const blockWidth  = Math.max(...lines.map(line => measureText(line.text, config.font, line.weight, line.scale * nameSize)));
+      const blockHeight = lines.reduce((sum, line) => sum + line.scale * nameSize * config.lineHeight, 0);
+      const box = getBlockBox(centerX, centerY, blockWidth + haloWidthEm * nameSize, blockHeight, angleDeg);
+      ctx.labelBoxes.push(box);
+
+      placements.push({ lines, size: nameSize, x: centerX, y: centerY, angleDeg, color, ...meta });
+      return box;
+    };
+
+    // Turns one placement into its <text> element
+    const drawBlock = ({ lines, size, x, y, angleDeg, color }) => {
+
+      let lineTop = y - lines.reduce((sum, line) => sum + line.scale * size * config.lineHeight, 0) / 2;
       const tspans = lines.map(line => {
-        const fontSize = line.scale * nameSize;
+        const fontSize = line.scale * size;
         const lineBox = fontSize * config.lineHeight;
         const baseline = lineTop + lineBox / 2 + (ascender + descender) / 2 * fontSize;
         lineTop += lineBox;
         return `<tspan${attrs({
-          x             : centerX,
+          x             : x,
           y             : baseline,
           'font-size'   : fontSize,
           'font-weight' : line.weight,
@@ -351,18 +444,12 @@ export default {
         })}>${escapeXml(line.text)}</tspan>`;
       });
 
-      const blockWidth  = Math.max(...lines.map(line => measureText(line.text, config.font, line.weight, line.scale * nameSize)));
-      const blockHeight = lines.reduce((sum, line) => sum + line.scale * nameSize * config.lineHeight, 0);
-      const box = getBlockBox(centerX, centerY, blockWidth + haloWidthEm * nameSize, blockHeight, angleDeg);
-      ctx.labelBoxes.push(box);
-
-      texts.push(`<text${attrs({
+      return `<text${attrs({
         fill     : color,
         transform: angleDeg
-          ? `rotate(${angleDeg} ${formatNumber(centerX)} ${formatNumber(centerY)})`
+          ? `rotate(${angleDeg} ${formatNumber(x)} ${formatNumber(y)})`
           : undefined,
-      })}>${tspans.join('')}</text>`);
-      return box;
+      })}>${tspans.join('')}</text>`;
     };
 
     // Pass 1: inside labels; small countries wait for pass 2
@@ -379,13 +466,30 @@ export default {
         !(entry.population?.value >= config.minStatsPopulation);
       if (isBelowStatsPopulation) counts.belowStatsPopulation++;
 
+      // `nameSource: 'iso3'` sets three-letter codes instead of names, which
+      // makes every block much shorter; entries without a code (Northern
+      // Cyprus, Somaliland, Siachen Glacier) keep their name
+      const separator = config.statsSeparator ?? ' / ';
+      let nameText = config.nameSource === 'iso3' ? entry.iso3 ?? entry.name : entry.name;
+      let statTexts = isBelowStatsPopulation
+        ? []
+        : getStatTexts(entry, config.statsLayout, config.statsDecimals ?? null, separator);
+
+      // Layouts that pull numbers up onto the name's line: all of them for
+      // 'single-line' (DEU/84M/$5T/$60K), the population only for 'gdp-middle',
+      // which leaves GDP as the middle line of three
+      if (statTexts.length && (config.statsLayout === 'single-line' || config.statsLayout === 'gdp-middle')) {
+        const pulled = config.statsLayout === 'single-line' ? statTexts : statTexts.slice(0, 1);
+        nameText = [nameText, ...pulled].join(separator);
+        statTexts = statTexts.slice(pulled.length);
+      }
+
       const nameLine = {
-        text  : entry.name,
+        text  : nameText,
         weight: isBelowStatsPopulation ? config.statsWeight : config.nameWeight,
         scale : 1,
       };
-      const statLines = (isBelowStatsPopulation ? [] : getStatTexts(entry, config.statsLayout))
-        .map(text => ({ text, weight: config.statsWeight, scale: config.statsScale }));
+      const statLines = statTexts.map(text => ({ text, weight: config.statsWeight, scale: config.statsScale }));
 
       const polygons = multiPolygon.map(polygon => preparePolygon(ctx, polygon));
       const fillRgb = getFillColor ? getFillColor(multiPolygon) : [0, 0, 0];
@@ -402,13 +506,14 @@ export default {
       if (fit.size) {
         counts[statLines.length ? 'full' : 'nameOnly']++;
         if (fit.angleDeg) counts.rotated++;
-        addBlock(lines, fit.size, fit.center[0], fit.center[1], fit.angleDeg, color);
+        addBlock(lines, fit.size, fit.center[0], fit.center[1], fit.angleDeg, color,
+          { id, polygon: fit.polygon, anchor: fit.polygon?.pole ?? fit.center });
         return;
       }
 
       if (callouts) {
         const largest = polygons.reduce((best, polygon) => polygon.area > best.area ? polygon : best);
-        pending.push({ entry, lines, anchor: largest.pole });
+        pending.push({ id, entry, lines, anchor: largest.pole, polygon: largest });
         return;
       }
 
@@ -420,7 +525,8 @@ export default {
       }
       counts.nameOnly++;
       if (nameFit.angleDeg) counts.rotated++;
-      addBlock([nameLine], nameFit.size, nameFit.center[0], nameFit.center[1], nameFit.angleDeg, color);
+      addBlock([nameLine], nameFit.size, nameFit.center[0], nameFit.center[1], nameFit.angleDeg, color,
+        { id, polygon: nameFit.polygon, anchor: nameFit.polygon?.pole ?? nameFit.center });
     });
 
     // Pass 2: small countries, most populous first. Every small country's dot
@@ -442,7 +548,7 @@ export default {
       });
       pending.sort((a, b) => (b.entry.population?.value ?? 0) - (a.entry.population?.value ?? 0));
 
-      pending.forEach(({ entry, lines, anchor, anchorBox }) => {
+      pending.forEach(({ id, entry, lines, anchor, anchorBox, polygon }) => {
 
         const smallLines = lines.map(line => ({ ...line, scale: line.scale === 1 ? 1 : callouts.statsScale }));
         const measure = size => ({
@@ -461,7 +567,7 @@ export default {
             if (!overlay) continue;
             counts.overlays++;
             if (size < overlaySizes[0]) counts.shrunk++;
-            addBlock(smallLines, size, overlay.centerX, overlay.centerY, 0, color);
+            addBlock(smallLines, size, overlay.centerX, overlay.centerY, 0, color, { id, polygon, anchor });
             return;
           }
         }
@@ -487,14 +593,16 @@ export default {
         counts.callouts++;
         calloutNames.push(entry.name);
 
-        const box = addBlock(smallLines, nameSize, spot.centerX, spot.centerY, 0, color);
+        const box = addBlock(smallLines, nameSize, spot.centerX, spot.centerY, 0, color, { id, polygon, anchor });
+
+        // The line itself is drawn after any joint solve, since the label it
+        // points at may still move; only its obstacle boxes are reserved now
+        leaderRequests.push({ anchor, index: placements.length - 1 });
+
         const targetX = Math.min(box.maxX, Math.max(box.minX, anchor[0]));
         const targetY = Math.min(box.maxY, Math.max(box.minY, anchor[1]));
-        leaders.push(`<circle${attrs({ cx: anchor[0], cy: anchor[1], r: dotRadius })}/>`);
-
         const leaderLength = Math.hypot(targetX - anchor[0], targetY - anchor[1]);
-        if (leaderLength > dotRadius * 2) {
-          leaders.push(`<line${attrs({ x1: anchor[0], y1: anchor[1], x2: targetX, y2: targetY })}/>`);
+        if (leaderLength > ctx.mm(callouts.dotRadius) * 2) {
 
           // Register the leader as a chain of small boxes, so labels placed
           // later keep clear of it
@@ -528,6 +636,87 @@ export default {
         `people left unlabeled instead of put on a leader line (${skippedNames.join(', ')})`
       );
     }
+
+    // The size of a placement's block, and the box it occupies
+    const blockOf = ({ lines, size, x, y, angleDeg }) => {
+      const width = Math.max(...lines.map(line => measureText(line.text, config.font, line.weight, line.scale * size)));
+      const height = lines.reduce((sum, line) => sum + line.scale * size * config.lineHeight, 0);
+      return getBlockBox(x, y, width + haloWidthEm * size, height, angleDeg);
+    };
+
+    // Joint solve: the greedy arrangement above becomes the starting point for
+    // a continuous optimization over every label's position, angle and size at
+    // once. Off unless the style asks for it.
+    if (config.solver === 'anneal') {
+
+      const fields = new Map();
+      const margin = ctx.mm(config.solverMarginMm ?? '0.35mm');
+
+      const solverLabels = placements.map(placement => {
+
+        // The same box the greedy placer uses: measured width plus the halo,
+        // and no `fill` margin. With an inflated box the arrangement greedy
+        // handed over would not even be feasible here, and the hard constraint
+        // can only prevent new overlaps, never repair inherited ones.
+        const unitWidth = Math.max(...placement.lines.map(line =>
+          measureText(line.text, config.font, line.weight, line.scale))) + haloWidthEm;
+        const unitHeight = placement.lines.reduce((sum, line) => sum + line.scale * config.lineHeight, 0);
+        let sdf = null;
+        if (placement.polygon) {
+          if (!fields.has(placement.polygon)) {
+            fields.set(placement.polygon, buildSdf(placement.polygon.rings, { cellMm: 0.4, padMm: 6 }));
+          }
+          sdf = fields.get(placement.polygon);
+        }
+        const anchor = placement.anchor ?? [placement.x, placement.y];
+        return {
+          id        : placement.id,
+          unitWidth,
+          unitHeight,
+          minSize   : placement.size,   // the solver may grow or move a label, never shrink it
+          maxSize   : maxNameSize,
+          margin,
+          sdf,
+          anchor,
+          roamMm    : Math.max(1, sdf ? sampleSdf(sdf, anchor[0], anchor[1]) : 1),
+          weight    : 1,
+        };
+      });
+
+      const startPoses = placements.map(placement => ({
+        x: placement.x, y: placement.y, theta: placement.angleDeg, size: placement.size,
+      }));
+
+      const { poses, stats } = solveLabels(solverLabels, startPoses, config.solverOptions ?? {});
+      poses.forEach((pose, index) => {
+        placements[index].x = pose.x;
+        placements[index].y = pose.y;
+        placements[index].angleDeg = pose.theta;
+        placements[index].size = pose.size;
+      });
+
+      ctx.notes.push(
+        `countryStats: solver moved ${stats.accepted} of ${stats.iterations} times, ` +
+        `${stats.overlapping} overlapping, ${stats.outside} not fully inside their country, ` +
+        `mean size ${(stats.meanSize / (25.4 / 72)).toFixed(1)} pt`
+      );
+    }
+
+    // Leaders are drawn now, against wherever each label finally sits
+    if (callouts) {
+      const dotRadius = ctx.mm(callouts.dotRadius);
+      for (const { anchor, index } of leaderRequests) {
+        const box = blockOf(placements[index]);
+        const targetX = Math.min(box.maxX, Math.max(box.minX, anchor[0]));
+        const targetY = Math.min(box.maxY, Math.max(box.minY, anchor[1]));
+        leaders.push(`<circle${attrs({ cx: anchor[0], cy: anchor[1], r: dotRadius })}/>`);
+        if (Math.hypot(targetX - anchor[0], targetY - anchor[1]) > dotRadius * 2) {
+          leaders.push(`<line${attrs({ x1: anchor[0], y1: anchor[1], x2: targetX, y2: targetY })}/>`);
+        }
+      }
+    }
+
+    const texts = placements.map(drawBlock);
 
     // Leader lines and dots under the text, drawn twice: halo, then line
     const leaderMarkup = leaders.join('');
