@@ -55,6 +55,26 @@ function formatCompact(value, prefix = '') {
   return prefix + String(Number(scaled.toFixed(numDecimals))) + suffix;
 }
 
+// Returns the stat lines' texts for a country.
+// 'stacked': one labeled line each, "Pop 38.2M" / "GDP $2.17T" / "GDP/cap $56.8K".
+// 'inline': all three on one line, "38.2M / $2.17T / $56.8K". The line is much
+// shorter than three stacked ones, so the block is two lines instead of four
+// and fits inside far more countries. The '$' tells the numbers apart.
+function getStatTexts(entry, layout) {
+  const population      = entry.population      && formatCompact(entry.population.value);
+  const gdp             = entry.gdpUsd          && formatCompact(entry.gdpUsd.value, '$');
+  const gdpPerCapita    = entry.gdpPerCapitaUsd && formatCompact(entry.gdpPerCapitaUsd.value, '$');
+  if (layout === 'inline') {
+    const parts = [population, gdp, gdpPerCapita].filter(Boolean);
+    return parts.length ? [parts.join(' / ')] : [];
+  }
+  return [
+    population   && `Pop ${population}`,
+    gdp          && `GDP ${gdp}`,
+    gdpPerCapita && `GDP/cap ${gdpPerCapita}`,
+  ].filter(Boolean);
+}
+
 // Returns the WCAG relative luminance of a [red, green, blue] color
 function getLuminance(rgb) {
   const [red, green, blue] = rgb.map(channel => {
@@ -360,12 +380,7 @@ export default {
         weight: isBelowStatsPopulation ? config.statsWeight : config.nameWeight,
         scale : 1,
       };
-      const statLines = isBelowStatsPopulation ? [] : [
-        entry.population      && `Pop ${formatCompact(entry.population.value)}`,
-        entry.gdpUsd          && `GDP ${formatCompact(entry.gdpUsd.value, '$')}`,
-        entry.gdpPerCapitaUsd && `GDP/cap ${formatCompact(entry.gdpPerCapitaUsd.value, '$')}`,
-      ]
-        .filter(Boolean)
+      const statLines = (isBelowStatsPopulation ? [] : getStatTexts(entry, config.statsLayout))
         .map(text => ({ text, weight: config.statsWeight, scale: config.statsScale }));
 
       const polygons = multiPolygon.map(polygon => preparePolygon(ctx, polygon));

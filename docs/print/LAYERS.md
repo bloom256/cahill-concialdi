@@ -46,6 +46,10 @@ one of its polygons:
   hidden names.
 - `minStatsPopulation` (optional): countries below it, or without population data, get only
   their name, set in the regular stats weight instead of bold (`geo-stats-nov`: 1 million).
+- `statsLayout`: `stacked` (default) gives each number its own labeled line
+  ("Pop 38.2M"); `inline` puts all three on one line ("38.2M / $2.17T / $56.8K").
+  Inline halves the block height, so many more countries hold their label inside
+  (`geo-stats-nov`: 5 leader lines instead of 14).
 - Text is dark or light depending on the fill's luminance, or a fixed color with a halo
   (`textColor: 'fixed'`, used over imagery).
 - **Small countries** (`callouts.show`): every country without an inside label gets its full
@@ -56,8 +60,8 @@ one of its polygons:
   2. **Callout**: otherwise the block takes the nearest free spot in rings of growing distance
      (2 to 75 mm) and 12 directions, with a dot and a leader line.
 
-  No country is left unlabeled. In `geo-stats-nov` (6 pt minimum on the 190 cm print),
-  about 14 countries need a leader line, mostly in the Balkans and the Leeward Islands.
+  No country is left unlabeled. In `geo-stats-nov` (5 pt minimum on the 190 cm print,
+  stats on one line), only 5 countries need a leader line.
 
 **Implemented: `graticuleLabels`** (`print/layers/graticule-labels.mjs`, page space).
 Text on the grid itself:

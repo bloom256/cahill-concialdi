@@ -23,6 +23,7 @@ reproducibly from this repository in the Cahill-Concialdi projection.
 | Content | Admin-1 subdivisions, labels, rivers and lakes, frame and cartouche. Must stay extensible: more layers may be added later | 2026-09-13 |
 | Docs | `CLAUDE.md` at repo root, plan in `docs/print/` | 2026-09-13 |
 | Print grid | Thin line weights (graticule 0.2 mm, tropic and polar circles 0.35 mm) and grid labels on every map except `seav-original`, via `preset-print-grid` | 2026-09-14 |
+| Country stats layout | The three numbers share one line ("38.2M / $2.17T / $56.8K") and labels are 5-14 pt. The stacked four-line block was too tall, so too many names ended up off their country on leader lines | 2026-09-16 |
 | Blue Marble month | June 2004, the current favorite ("my fav for now"); November was chosen first from all 12 months in round `2026-09-14-r1`. `geo-blue-marble` uses June | 2026-09-14 |
 | Orientation | Every variant after `seav-original` uses the upright, North-Pole-centered view of `seav-upright` (no -5.4 deg tilt); new variants extend `seav-upright` or a descendant of it | 2026-09-13 |
 | Variants | All variants live side by side as style files in the same commit, never in branches. Every build can render all of them, and the collection grows over time (e.g. a geographic map and a random-colors map next to `seav-print`) (`STYLES.md`) | 2026-09-13 |
