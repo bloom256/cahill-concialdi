@@ -60,8 +60,13 @@ one of its polygons:
   2. **Callout**: otherwise the block takes the nearest free spot in rings of growing distance
      (2 to 75 mm) and 12 directions, with a dot and a leader line.
 
-  No country is left unlabeled. In `geo-stats-nov` (7 pt minimum on the 190 cm print,
-  stats on one line), 14 countries need a leader line.
+  3. **Skipped** (`callouts.minLeaderPopulation`): a country below that population that
+     would need a leader line is left unlabeled instead, so a few specks do not add lines
+     across the map. Every skipped name is printed in the render notes.
+
+  In `geo-stats-nov` (7 pt minimum on the 190 cm print, stats on one line, nothing under
+  300 000 people on a leader line) the render prints where each label landed and which
+  countries were skipped.
 
 **Implemented: `places`** (`print/layers/places.mjs`, page space). Names for spots no
 country label reaches, from the hand-kept list `data/places.json` (`{ name, lat, lon }`,

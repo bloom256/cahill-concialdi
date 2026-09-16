@@ -17,7 +17,9 @@
 // 2. callout: otherwise the block goes to the nearest free spot further away,
 //    with a dot on the country and a leader line.
 // Every small country's dot area is reserved first, so no label covers
-// another small country, and every country is labeled.
+// another small country. A country below `callouts.minLeaderPopulation` that
+// would need a leader line is left unlabeled instead, and named in the notes:
+// a handful of the tiniest states are not worth the clutter of a line.
 
 import polylabel from 'polylabel';
 import { LatLon } from '../../data-types.mjs';
@@ -327,6 +329,7 @@ export default {
     const texts = [];
     const leaders = [];
     const hiddenNames = [];
+    const skippedNames = [];
     const counts = { full: 0, nameOnly: 0, rotated: 0, overlays: 0, callouts: 0, forced: 0, belowStatsPopulation: 0 };
 
     // Adds a text block (lines stacked around the center) and records its box
@@ -436,7 +439,7 @@ export default {
       });
       pending.sort((a, b) => (b.entry.population?.value ?? 0) - (a.entry.population?.value ?? 0));
 
-      pending.forEach(({ lines, anchor, anchorBox }) => {
+      pending.forEach(({ entry, lines, anchor, anchorBox }) => {
 
         const smallLines = lines.map(line => ({ ...line, scale: line.scale === 1 ? 1 : callouts.statsScale }));
         const width  = Math.max(...smallLines.map(line => measureText(line.text, config.font, line.weight, line.scale * nameSize)))
@@ -453,7 +456,17 @@ export default {
           return;
         }
 
-        // 2. Further away, with a dot and a leader line
+        // 2. The tiniest countries are left unlabeled rather than put on a
+        // leader line; their reserved dot area is released as well
+        if (callouts.minLeaderPopulation &&
+            !(entry.population?.value >= callouts.minLeaderPopulation)) {
+          skippedNames.push(entry.name);
+          const boxIdx = ctx.labelBoxes.indexOf(anchorBox);
+          if (boxIdx >= 0) ctx.labelBoxes.splice(boxIdx, 1);
+          return;
+        }
+
+        // 3. Further away, with a dot and a leader line
         let spot = findCalloutSpot(ctx, anchor, width, height, callouts.distancesMm);
         if (!spot) {
           counts.forced++;
@@ -492,6 +505,12 @@ export default {
       `(${counts.forced} without a free spot), ${hiddenNames.length} hidden` +
       (hiddenNames.length ? ` (${hiddenNames.join(', ')})` : '')
     );
+    if (skippedNames.length) {
+      ctx.notes.push(
+        `countryStats: ${skippedNames.length} countries under ${formatCompact(callouts.minLeaderPopulation)} ` +
+        `people left unlabeled instead of put on a leader line (${skippedNames.join(', ')})`
+      );
+    }
 
     // Leader lines and dots under the text, drawn twice: halo, then line
     const leaderMarkup = leaders.join('');

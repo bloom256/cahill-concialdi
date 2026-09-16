@@ -67,7 +67,8 @@ export default {
       show            : true,
       nameSize        : '7pt',
       statsScale      : 0.8,   // small labels' stats are relatively larger, for legibility
-      overlayOffsetsMm: [0, 1, 2, 3],  // first try right on the country, no leader line
+      overlayOffsetsMm    : [0, 1, 2, 3],  // first try right on the country, no leader line
+      minLeaderPopulation : 3e5,   // below this, leave the country unlabeled rather than draw a line
       distancesMm     : [2, 4, 7, 11, 16, 22, 30, 40, 55, 75],
       dotRadius       : '0.3mm',
       leaderWidth     : '0.12mm',
