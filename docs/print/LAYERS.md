@@ -38,18 +38,37 @@ one of its polygons:
 - Candidate centers are the pole of inaccessibility plus an interior grid, tried at
   several angles. A binary search finds the largest text block that fits without
   crossing any edge.
-- Horizontal, centered placements win near-ties (`rotationPenalty`). Multi-line blocks
-  stay horizontal (`rotateFullBlock: false`); name-only labels may follow a country's
-  long axis (Norway, Chile, the United Kingdom).
+- **Rotation is decided by shape** (`maxAngleDeg`, `rotateMinElongation`). Each polygon's
+  principal axis and elongation (long/short spread ratio) come from PCA of its outline.
+  A compact country (elongation below the threshold, `geo-stats-nov`: 2.2) is only ever
+  tried horizontal, which reads best. A long, thin one is also searched densely within
+  30 degrees of its own axis in 2.5 degree steps, then refined; coarse samples missed
+  fits that exist (Portugal fits at -68 degrees and at no angle 15 degrees either side).
+  Horizontal, centered placements still win near-ties (`rotationPenalty`).
+- **Single line along the axis** (`singleLineAlongAxis`): when a country's block ends up
+  tilted at least 20 degrees, it is set as one line instead, `PRT/10M/$346B/$33K`, lying
+  along the country. Blocks that stay upright keep their lines even where one line would
+  fit bigger (Sweden, Morocco), since there it becomes a huge diagonal ribbon.
 - If the full block does not fit at `minNameSize`, the label falls back to the name only
   (down to `minNameOnlySize`), else it is hidden. The render prints the counts and the
   hidden names.
 - `minStatsPopulation` (optional): countries below it, or without population data, get only
   their name, set in the regular stats weight instead of bold (`geo-stats-nov`: 1 million).
 - `statsLayout`: `stacked` (default) gives each number its own labeled line
-  ("Pop 38.2M"); `inline` puts all three on one line ("38.2M / $2.17T / $56.8K").
-  Inline halves the block height, so many more countries hold their label inside
-  (`geo-stats-nov`: 5 leader lines instead of 14).
+  ("Pop 38.2M"); `inline` puts all three on one line ("38.2M / $2.17T / $56.8K");
+  `two-line` sets "FRA/67M" over "$3T/$51K", two lines of similar width, so the block is
+  about as rectangular as this data gets (`geo-stats-nov`). Also available: `single-line`,
+  `three-line`, `gdp-middle`, `stacked-plain`. With `nameSource: 'iso3'`, `statsDecimals: 0`
+  and `statsSeparator: '/'` the block reads `DEU/84M` over `$5T/$60K`.
+- **Joint position solver** (`solver: 'anneal'`, `print/labels/solver.mjs`): after the
+  placement above, every label's position is optimized at once by simulated annealing.
+  The energy rewards staying inside the country (read from its signed distance field,
+  `print/labels/sdf.mjs`) and staying near its interior point, with overlap a hard
+  constraint; neighbouring labels can swap places. A large country holds its label near the
+  middle, a small one may roam. `geo-stats-nov` optimizes positions only
+  (`solverOptions: { optimizeTheta: false, optimizeSize: false }`): angles come from PCA and
+  sizes from the fit. Seeded, so the map is reproducible; about 2 s per render.
+  `scripts/bench-labels.mjs` and `scripts/test-sdf.mjs` measure and check it.
 - Text is dark or light depending on the fill's luminance, or a fixed color with a halo
   (`textColor: 'fixed'`, used over imagery).
 - **Small countries** (`callouts.show`): every country without an inside label gets its full

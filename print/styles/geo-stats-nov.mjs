@@ -2,14 +2,17 @@
 // STYLE: GEO-STATS-NOV
 // ------------------------------------------------------------------
 
-// The November Blue Marble with country borders and every country's name,
-// population, GDP, and GDP per capita. The three numbers share one line
-// ("38.2M / $2.17T / $56.8K"), so the block is two lines and fits inside far
-// more countries. Labels are 7-14 pt on the 190 cm print (5 and 6 pt were
-// readable only up close): inside the country where they fit, otherwise right
-// on top of the small country, and only when that spot is taken, a few mm away
-// with a leader line. Countries under 1 million people show only their name;
-// the threshold stays at 1 million because small countries are interesting too.
+// The November Blue Marble with country borders and every country's code,
+// population, GDP, and GDP per capita, as a two-line block of similar widths:
+// "FRA/67M" over "$3T/$51K". Labels are 7-14 pt on the 190 cm print (5 and 6 pt
+// were readable only up close).
+// - Rotation is decided by shape (PCA): only a long, thin country turns its
+//   label along its own axis; compact ones stay horizontal, which reads best.
+//   A country that long gets its block as one line: PRT/10M/$346B/$33K.
+// - Positions are then optimized for all labels at once (joint solver); angles
+//   and sizes are left exactly as placed.
+// Countries under 1 million people show only their name; the threshold stays
+// at 1 million because small countries are interesting too.
 // Changes vs. geo-blue-marble-11-nov: country borders and stats labels.
 
 export default {
@@ -48,8 +51,9 @@ export default {
     nameWeight        : 500,      // Medium: thinner glyphs stay crisp inside the outline
     statsWeight       : 300,      // Light
     statsScale        : 0.72,     // stat line size relative to the name size
-    statsLayout       : 'inline',  // population / GDP / GDP per capita on one line
-    statsDecimals     : 0,         // whole numbers only: 84M / $5T / $60K
+    statsLayout       : 'two-line',  // "FRA/67M" over "$3T/$51K"
+    statsSeparator    : '/',         // no spaces
+    statsDecimals     : 0,           // whole numbers only
     nameSource        : 'iso3',    // three-letter codes instead of names
     minStatsPopulation: 1e6,      // smaller countries get only their name, in the stats weight
     lineHeight        : 1.1,      // line box height relative to its font size
@@ -57,9 +61,14 @@ export default {
     maxNameSize       : '14pt',
     minNameSize       : '7pt',    // smallest inside label; below this, a small label on top
     minNameOnlySize   : '7pt',    // for countries without data (name only)
-    anglesDeg         : [0],
-    rotationPenalty   : 1.35,
-    rotateFullBlock   : false,
+    anglesDeg          : [0],
+    rotationPenalty    : 1.35,
+    rotateFullBlock    : true,
+    maxAngleDeg        : 90,     // a thin country's label may lie along its own axis
+    rotateMinElongation: 2.2,    // PCA long/short ratio; below this a label is never rotated
+    singleLineAlongAxis: true,   // a rotated label becomes one line when that fits larger
+    solver             : 'anneal',
+    solverOptions      : { optimizeTheta: false, optimizeSize: false },  // positions only
     textColor         : 'fixed',
     color             : '#ffffff',
     haloColor         : '#02060d',
