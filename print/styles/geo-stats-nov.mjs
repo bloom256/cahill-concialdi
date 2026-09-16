@@ -9,6 +9,8 @@
 // - Rotation is decided by shape (PCA): only a long, thin country turns its
 //   label along its own axis; compact ones stay horizontal, which reads best.
 //   A country that long gets its block as one line: PRT/10M/$346B/$33K.
+// - The largest compact countries get the readable labeled form instead, with
+//   exact figures: Russia / Pop 144M / GDP $2.17T / GDP/cap $14.9K.
 // - Positions are then optimized for all labels at once (joint solver); angles
 //   and sizes are left exactly as placed.
 // Countries under 1 million people show only their name; the threshold stays
@@ -67,6 +69,10 @@ export default {
     maxAngleDeg        : 90,     // a thin country's label may lie along its own axis
     rotateMinElongation: 2.2,    // PCA long/short ratio; below this a label is never rotated
     singleLineAlongAxis: true,   // a rotated label becomes one line when that fits larger
+    // The largest compact countries get the full labeled block with exact
+    // figures: Russia, China, India, the US, Canada, Brazil, Australia and
+    // Kazakhstan (Argentina is large enough but too elongated)
+    fullLabel          : { minAreaMm2: 5000, maxElongation: 2.2, roundNumbers: false },
     solver             : 'anneal',
     solverOptions      : { optimizeTheta: false, optimizeSize: false },  // positions only
     textColor         : 'fixed',
