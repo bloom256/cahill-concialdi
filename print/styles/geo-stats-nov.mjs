@@ -66,6 +66,7 @@ export default {
     callouts          : {
       show            : true,
       nameSize        : '7pt',
+      overlaySizes    : ['7pt', '6.5pt', '6pt'],  // on its own country, shrink rather than take a leader line
       statsScale      : 0.8,   // small labels' stats are relatively larger, for legibility
       overlayOffsetsMm    : [0, 1, 2, 3],  // first try right on the country, no leader line
       minLeaderPopulation : 3e5,   // below this, leave the country unlabeled rather than draw a line

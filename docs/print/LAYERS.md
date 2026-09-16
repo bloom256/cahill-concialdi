@@ -55,8 +55,10 @@ one of its polygons:
 - **Small countries** (`callouts.show`): every country without an inside label gets its full
   block, at `callouts.nameSize`, after all inside labels are placed (most populous first).
   Every small country's dot area is reserved first, so no label covers another small country.
-  1. **On top** (`overlayOffsetsMm`): the block is centered on the country, or up to a few mm
-     off, without a leader line, if that spot overlaps no other label.
+  1. **On top** (`overlayOffsetsMm`, `overlaySizes`): the block is centered on the country, or
+     up to a few mm off, without a leader line, if that spot overlaps no other label. The sizes
+     in `overlaySizes` are tried largest first (`geo-stats-nov`: 7, 6.5, 6 pt), because a label
+     one step smaller on its own country reads better than a full-size one on a line.
   2. **Callout**: otherwise the block takes the nearest free spot in rings of growing distance
      (2 to 75 mm) and 12 directions, with a dot and a leader line.
 

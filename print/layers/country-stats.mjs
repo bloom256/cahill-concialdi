@@ -330,7 +330,8 @@ export default {
     const leaders = [];
     const hiddenNames = [];
     const skippedNames = [];
-    const counts = { full: 0, nameOnly: 0, rotated: 0, overlays: 0, callouts: 0, forced: 0, belowStatsPopulation: 0 };
+    const calloutNames = [];
+    const counts = { full: 0, nameOnly: 0, rotated: 0, overlays: 0, shrunk: 0, callouts: 0, forced: 0, belowStatsPopulation: 0 };
 
     // Adds a text block (lines stacked around the center) and records its box
     const addBlock = (lines, nameSize, centerX, centerY, angleDeg, color) => {
@@ -427,6 +428,8 @@ export default {
     if (callouts) {
 
       const nameSize = ctx.mm(callouts.nameSize);
+      // Sizes tried for a label placed on its own country, largest first
+      const overlaySizes = (callouts.overlaySizes ?? [callouts.nameSize]).map(token => ctx.mm(token));
       const dotRadius = ctx.mm(callouts.dotRadius);
       const color = callouts.color ?? config.lightColor ?? config.color;
 
@@ -442,19 +445,28 @@ export default {
       pending.forEach(({ entry, lines, anchor, anchorBox }) => {
 
         const smallLines = lines.map(line => ({ ...line, scale: line.scale === 1 ? 1 : callouts.statsScale }));
-        const width  = Math.max(...smallLines.map(line => measureText(line.text, config.font, line.weight, line.scale * nameSize)))
-          + haloWidthEm * nameSize;
-        const height = smallLines.reduce((sum, line) => sum + line.scale * nameSize * config.lineHeight, 0);
+        const measure = size => ({
+          width : Math.max(...smallLines.map(line => measureText(line.text, config.font, line.weight, line.scale * size)))
+            + haloWidthEm * size,
+          height: smallLines.reduce((sum, line) => sum + line.scale * size * config.lineHeight, 0),
+        });
 
-        // 1. Right on the country, when that spot is free: no leader line
-        const overlay = callouts.overlayOffsetsMm
-          ? findOverlaySpot(ctx, anchor, width, height, callouts.overlayOffsetsMm, anchorBox)
-          : null;
-        if (overlay) {
-          counts.overlays++;
-          addBlock(smallLines, nameSize, overlay.centerX, overlay.centerY, 0, color);
-          return;
+        // 1. Right on the country, when that spot is free: no leader line.
+        // Sizes are tried largest first, because a label one step smaller on
+        // its own country reads better than a full-size one on a leader line.
+        if (callouts.overlayOffsetsMm) {
+          for (const size of overlaySizes) {
+            const { width, height } = measure(size);
+            const overlay = findOverlaySpot(ctx, anchor, width, height, callouts.overlayOffsetsMm, anchorBox);
+            if (!overlay) continue;
+            counts.overlays++;
+            if (size < overlaySizes[0]) counts.shrunk++;
+            addBlock(smallLines, size, overlay.centerX, overlay.centerY, 0, color);
+            return;
+          }
         }
+
+        const { width, height } = measure(nameSize);
 
         // 2. The tiniest countries are left unlabeled rather than put on a
         // leader line; their reserved dot area is released as well
@@ -473,6 +485,7 @@ export default {
           spot = { centerX: anchor[0] + callouts.distancesMm[0] + width / 2, centerY: anchor[1] };
         }
         counts.callouts++;
+        calloutNames.push(entry.name);
 
         const box = addBlock(smallLines, nameSize, spot.centerX, spot.centerY, 0, color);
         const targetX = Math.min(box.maxX, Math.max(box.minX, anchor[0]));
@@ -501,10 +514,14 @@ export default {
     ctx.notes.push(
       `countryStats: ${counts.full} full labels, ${counts.nameOnly} name only (${counts.rotated} rotated), ` +
       `${counts.belowStatsPopulation} below the stats population, ` +
-      `${counts.overlays} small labels on their country, ${counts.callouts} with leader lines ` +
+      `${counts.overlays} small labels on their country (${counts.shrunk} a size smaller), ` +
+      `${counts.callouts} with leader lines ` +
       `(${counts.forced} without a free spot), ${hiddenNames.length} hidden` +
       (hiddenNames.length ? ` (${hiddenNames.join(', ')})` : '')
     );
+    if (calloutNames.length) {
+      ctx.notes.push(`countryStats: leader lines for ${calloutNames.join(', ')}`);
+    }
     if (skippedNames.length) {
       ctx.notes.push(
         `countryStats: ${skippedNames.length} countries under ${formatCompact(callouts.minLeaderPopulation)} ` +
